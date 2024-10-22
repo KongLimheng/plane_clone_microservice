@@ -1,0 +1,44 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run develop",
+    "develop": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:errors": "eslint . --ext .ts,.tsx --quiet",
+    "export": "next export",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+  },
+  "dependencies": {
+    "@plane/helpers": "*",
+    "@plane/types": "*",
+    "@plane/ui": "*",
+    "@sqlite.org/sqlite-wasm": "^3.46.1-build5",
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "lodash": "^4.17.21",
+    "mobx": "^6.13.5",
+    "mobx-react": "^9.1.1",
+    "mobx-utils": "^6.1.0",
+    "next": "14.2.15",
+    "next-themes": "^0.3.0",
+    "nprogress": "^0.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "swr": "^2.2.5"
+  },
+  "devDependencies": {
+    "@plane/eslint-config": "*",
+    "@plane/typescript-config": "*",
+    "@types/node": "18.16.1",
+    "@types/nprogress": "^0.2.3",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "prettier": "^3.2.5",
+    "tailwind-config-custom": "*",
+    "typescript": "5.3.3"
+  }
+}

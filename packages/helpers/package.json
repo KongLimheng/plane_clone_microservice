@@ -1,0 +1,24 @@
+{
+  "name": "@plane/helpers",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "build": "tsup ./index.ts --format esm,cjs --dts --external react --minify"
+  },
+  "private": true,
+  "description": "",
+  "dependencies": {
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "@types/react": "^18.3.11",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.3"
+  }
+}

@@ -2,22 +2,32 @@
   "name": "plane_clone",
   "private": true,
   "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev",
-    "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "build": "turbo run build",
+    "dev": "turbo run dev --concurrency=13",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "lint:errors": "turbo run lint:errors",
+    "clean": "turbo run clean",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "migrate": "python manage.py migrate --run-syncdb",
+    "migrate:make": "python manage.py makemigrations"
   },
   "devDependencies": {
     "prettier": "^3.2.5",
-    "turbo": "^2.1.2",
-    "typescript": "^5.4.5"
+    "prettier-plugin-tailwindcss": "^0.6.8",
+    "turbo": "^2.1.2"
+  },
+  "resolutions": {
+    "@types/react": "18.2.48"
   },
   "engines": {
     "node": ">=18"
   },
   "packageManager": "npm@10.8.3",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "admin",
+    "packages/*",
+    "plane_clone_api",
+    "web"
   ]
 }

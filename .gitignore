@@ -1,9 +1,79 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Created by https://www.toptal.com/developers/gitignore/api/django
+# Edit at https://www.toptal.com/developers/gitignore?templates=django
 
-# Dependencies
+### Django ###
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media
+
+# If your build process includes running collectstatic, then you probably don't need or want to include staticfiles/
+# in your Git repository. Update and uncomment the following line accordingly.
+# <django-project-name>/staticfiles/
+
+### Django.Python Stack ###
+# Byte-compiled / optimized / DLL files
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
 node_modules
-.pnp
+.next
+
+### NextJS ###
+# Dependencies
+/node_modules
+/.pnp
 .pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
+dist/
+out/
+
+# Misc
+.DS_Store
+*.pem
+.history
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
 # Local env files
 .env
@@ -12,27 +82,51 @@ node_modules
 .env.test.local
 .env.production.local
 
-# Testing
-coverage
-
-# Turbo
-.turbo
-
 # Vercel
 .vercel
 
-# Build Outputs
-.next/
-out/
-build
-dist
+# Turborepo
+.turbo
 
-
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Misc
+## Django ##
+venv
+.venv
+*.pyc
+staticfiles
+mediafiles
+.env
 .DS_Store
-*.pem
+logs/
+
+node_modules/
+assets/dist/
+npm-debug.log
+yarn-error.log
+
+# Editor directories and files
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+package-lock.json
+.vscode
+
+# Sentry
+.sentryclirc
+
+# lock files
+package-lock.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+
+.npmrc
+.secrets
+tmp/
+## packages
+dist
+.temp/
+deploy/selfhost/plane-app/
+## Storybook
+*storybook.log
+output.css

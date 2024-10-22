@@ -1,0 +1,46 @@
+{
+  "name": "admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run develop",
+    "develop": "next dev --port 3001",
+    "build": "next build",
+    "preview": "next build && next start",
+    "start": "next start",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:errors": "eslint . --ext .ts,.tsx --quiet"
+  },
+  "dependencies": {
+    "@headlessui/react": "^2.1.10",
+    "@plane/helpers": "*",
+    "@plane/types": "*",
+    "@plane/ui": "*",
+    "axios": "^1.7.7",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.451.0",
+    "mobx": "^6.13.2",
+    "mobx-react": "^9.1.1",
+    "next": "14.2.13",
+    "next-themes": "^0.3.0",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-hook-form": "^7.53.0",
+    "swr": "^2.2.5",
+    "zxcvbn": "^4.4.2"
+  },
+  "devDependencies": {
+    "@plane/eslint-config": "*",
+    "@plane/typescript-config": "*",
+    "@types/node": "^18",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@types/zxcvbn": "^4.4.5",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.13",
+    "postcss": "^8",
+    "tailwind-config-custom": "*",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.6.2"
+  }
+}
