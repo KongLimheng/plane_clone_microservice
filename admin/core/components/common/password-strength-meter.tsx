@@ -1,3 +1,5 @@
+"use client";
+
 import { FC, useMemo } from "react";
 import { cn } from "@plane/ui";
 import { E_PASSWORD_STRENGTH, getPasswordStrength } from "@/helpers/password.helper";

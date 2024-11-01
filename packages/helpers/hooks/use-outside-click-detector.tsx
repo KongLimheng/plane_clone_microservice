@@ -1,7 +1,7 @@
-import { RefObject, useEffect } from 'react'
+import * as React from 'react'
 
 export const useOutsideClickDetector = (
-  ref: RefObject<HTMLElement>,
+  ref: React.RefObject<HTMLElement>,
   callback: () => void,
   useCapture = false
 ) => {
@@ -17,7 +17,7 @@ export const useOutsideClickDetector = (
     }
   }
 
-  useEffect(() => {
+  React.useEffect(() => {
     document.addEventListener('mousedown', handleClick, useCapture)
     return () => {
       document.removeEventListener('mousedown', handleClick, useCapture)

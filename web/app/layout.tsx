@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+import { Metadata, Viewport } from "next";
 // styles
 import "@/styles/globals.css";
 import "@/styles/command-pallette.css";
@@ -6,7 +6,7 @@ import "@/styles/emoji.css";
 import "@/styles/react-day-picker.css";
 
 import { SITE_DESCRIPTION, SITE_NAME } from "@/constants/meta";
-import { API_BASE_URL } from "@/helpers/common.helper";
+import { API_BASE_URL, cn } from "@/helpers/common.helper";
 import { AppProvider } from "./provider";
 
 export const metadata: Metadata = {
@@ -63,7 +63,7 @@ export default function RootLayout({
 
         {/* preloading */}
         <link rel="preload" href={`${API_BASE_URL}/api/instances/`} as="fetch" crossOrigin="use-credentials" />
-        {/* <link rel="preload" href={`${API_BASE_URL}/api/users/me/ `} as="fetch" crossOrigin="use-credentials" />
+        <link rel="preload" href={`${API_BASE_URL}/api/users/me/ `} as="fetch" crossOrigin="use-credentials" />
         <link rel="preload" href={`${API_BASE_URL}/api/users/me/profile/ `} as="fetch" crossOrigin="use-credentials" />
         <link rel="preload" href={`${API_BASE_URL}/api/users/me/settings/ `} as="fetch" crossOrigin="use-credentials" />
         <link
@@ -71,12 +71,20 @@ export default function RootLayout({
           href={`${API_BASE_URL}/api/users/me/workspaces/`}
           as="fetch"
           crossOrigin="use-credentials"
-        /> */}
+        />
       </head>
 
       <body>
         <div id="context-menu-portal">
-          <AppProvider>{children}</AppProvider>
+          <AppProvider>
+            <div
+              className={cn(
+                "h-screen w-full overflow-hidden bg-custom-background-100 relative flex flex-col app-container"
+              )}
+            >
+              <div className="w-full h-full overflow-hidden relative">{children}</div>
+            </div>
+          </AppProvider>
         </div>
       </body>
     </html>

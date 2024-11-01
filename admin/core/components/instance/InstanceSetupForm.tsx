@@ -1,3 +1,5 @@
+"use client";
+
 import React, { FC, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";

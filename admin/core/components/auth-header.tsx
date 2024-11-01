@@ -3,7 +3,7 @@
 import { observer } from "mobx-react";
 import { usePathname } from "next/navigation";
 import { Settings } from "lucide-react";
-import { BreadcrumbItem, BreadCrumbs } from "@plane/ui";
+import { BreadcrumbItem, Breadcrumbs } from "@plane/ui";
 import { SidebarHamburgerToggle } from "./admin-sidebar";
 import { BreadcrumbLink } from "./common";
 
@@ -56,7 +56,7 @@ export const InstanceHeader = observer(() => {
         <SidebarHamburgerToggle />
         {breadcrumbItems.length >= 0 && (
           <div>
-            <BreadCrumbs>
+            <Breadcrumbs>
               <BreadcrumbItem
                 type="text"
                 link={
@@ -73,7 +73,7 @@ export const InstanceHeader = observer(() => {
                     <BreadcrumbItem key={title} type="text" link={<BreadcrumbLink href={href} label={title} />} />
                   )
               )}
-            </BreadCrumbs>
+            </Breadcrumbs>
           </div>
         )}
       </div>

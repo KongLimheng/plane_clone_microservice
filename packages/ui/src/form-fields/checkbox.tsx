@@ -1,5 +1,6 @@
-import React from "react";
-import { cn } from "../../helpers";
+import * as React from "react";
+// helpers
+import { cn } from "../helpers";
 
 export interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
   containerClassName?: string;
@@ -21,13 +22,13 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>((props, ref) 
   } = props;
 
   return (
-    <div className={cn("relative flex gap-2", containerClassName)}>
+    <div className={cn("relative flex-shrink-0 flex gap-2", containerClassName)}>
       <input
-        type="checkbox"
         id={id}
         ref={ref}
-        checked={checked}
+        type="checkbox"
         name={name}
+        checked={checked}
         className={cn(
           "appearance-none shrink-0 size-4 border rounded-[3px] focus:outline-1 focus:outline-offset-4 focus:outline-custom-primary-50 cursor-pointer",
           {
@@ -60,7 +61,6 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>((props, ref) 
       >
         <polyline points="20 6 9 17 4 12" />
       </svg>
-
       <svg
         className={cn(
           "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-4 p-0.5 pointer-events-none outline-none stroke-white hidden",
@@ -83,6 +83,6 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>((props, ref) 
     </div>
   );
 });
-
 Checkbox.displayName = "form-checkbox-field";
+
 export { Checkbox };

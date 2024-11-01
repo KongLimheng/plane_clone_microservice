@@ -16,11 +16,24 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 
-from plane import TimezoneMixin
 from plane.authentication.session import BaseSessionAuthentication
 from plane.license.api.permissions import InstanceAdminPermission
 from plane.utils.exception_logger import log_exception
 from plane.utils.paginator import BasePaginator
+
+
+class TimezoneMixin:
+    """
+    This enables timezone conversion according
+    to the user set timezone
+    """
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        if request.user.is_authenticated:
+            timezone.activate(zoneinfo.ZoneInfo(request.user.user_timezone))
+        else:
+            timezone.deactivate()
 
 
 class BaseAPIView(TimezoneMixin, APIView, BasePaginator):

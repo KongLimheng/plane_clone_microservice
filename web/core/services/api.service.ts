@@ -10,6 +10,8 @@ export abstract class APIService {
       baseURL,
       withCredentials: true,
     });
+
+    this.setupInterceptors();
   }
 
   private setupInterceptors() {

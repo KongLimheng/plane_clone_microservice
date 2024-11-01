@@ -1,3 +1,5 @@
+"use client";
+
 import { FC } from "react";
 // assets
 import Image from "next/image";

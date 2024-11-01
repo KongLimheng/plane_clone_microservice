@@ -36,6 +36,15 @@ class UserEndPoint(BaseViewSet):
         serializer = UserMeSettingsSerializer(req.user).data
         return Response(serializer, status=status.HTTP_200_OK)
 
+    @invalidate_cache(
+        path="/api/users/me/",
+    )
+    @invalidate_cache(
+        path="/api/users/me/settings/",
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
 
 class ProfileEndPoint(BaseAPIView):
     @method_decorator(cache_control(private=True, max_age=12))
@@ -46,10 +55,33 @@ class ProfileEndPoint(BaseAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @invalidate_cache("/api/users/me/settings/")
-    def path(self, req):
+    def patch(self, req):
         profile = Profile.objects.get(user=req.user)
         serializer = ProfileSerializer(profile, data=req.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UpdateUserOnBoardedEndpoint(BaseAPIView):
+    @invalidate_cache(path="/api/users/me/")
+    def patch(self, req):
+        profile = Profile.objects.get(user_id=req.user.id)
+        profile.is_onboarded = req.data.get("is_onboarded", False)
+        profile.save()
+        return Response({"message": "Updated successfully"},  status=status.HTTP_200_OK)
+
+
+class UpdateUserTourCompletedEndpoint(BaseAPIView):
+
+    @invalidate_cache(path="/api/users/me/")
+    def patch(self, req):
+        profile = Profile.objects.get(user_id=req.user)
+        profile.is_tour_completed = req.data.get(
+            "is_tour_completed", False
+        )
+        profile.save()
+        return Response(
+            {"message": "Updated successfully"}, status=status.HTTP_200_OK
+        )

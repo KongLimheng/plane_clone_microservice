@@ -1,6 +1,6 @@
 import React from "react";
-import { cn } from "../helpers";
 // helpers
+import { cn } from "./helpers";
 
 type Props = {
   children: React.ReactNode;
@@ -16,10 +16,11 @@ const Loader = ({ children, className = "" }: Props) => (
 type ItemProps = {
   height?: string;
   width?: string;
+  className?: string;
 };
 
-const Item: React.FC<ItemProps> = ({ height = "auto", width = "auto" }) => (
-  <div className="rounded-md bg-custom-background-80" style={{ height: height, width: width }} />
+const Item: React.FC<ItemProps> = ({ height = "auto", width = "auto", className = "" }) => (
+  <div className={cn("rounded-md bg-custom-background-80", className)} style={{ height: height, width: width }} />
 );
 
 Loader.Item = Item;

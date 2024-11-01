@@ -9,7 +9,7 @@ import { AuthRoot } from "@/components/account/auth-forms/auth-root";
 import { PageHead } from "@/components/core";
 import { EAuthModes, EPageTypes } from "@/helpers/authentication.helper";
 import DefaultLayout from "@/layouts/default-layout";
-import { AuthenticationWrapper } from "@/lib/wrappers/authentication-wrapper";
+import { AuthenticationWrapper } from "@/lib/wrappers";
 import PlaneBackgroundPatternDark from "@/public/auth/background-pattern-dark.svg";
 import PlaneBackgroundPattern from "@/public/auth/background-pattern.svg";
 import BlackHorizontalLogo from "@/public/plane-logos/black-horizontal-with-blue-logo.png";
@@ -17,7 +17,6 @@ import WhiteHorizontalLogo from "@/public/plane-logos/white-horizontal-with-blue
 
 const HomePage = observer(() => {
   const { resolvedTheme } = useTheme();
-  console.log(resolvedTheme);
   const logo = resolvedTheme === "light" ? BlackHorizontalLogo : WhiteHorizontalLogo;
 
   return (
@@ -54,7 +53,7 @@ const HomePage = observer(() => {
                 </Link>
               </div>
             </div>
-            <div>
+            <div className="flex flex-col justify-center flex-grow container h-[calc(100vh-60px)] mx-auto max-w-lg px-10 lg:max-w-md lg:px-5 transition-all">
               <AuthRoot authMode={EAuthModes.SIGN_IN} />
             </div>
           </div>

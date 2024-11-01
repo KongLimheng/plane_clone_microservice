@@ -1,5 +1,6 @@
+"use client";
+
 import Link from "next/link";
-import { Divide } from "lucide-react";
 import { Tooltip } from "@plane/ui";
 
 type Props = {

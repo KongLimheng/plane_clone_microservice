@@ -1,6 +1,8 @@
-import React, { useRef } from "react";
+import React from "react";
+// ui
 import { Tooltip } from "../tooltip";
-import { cn } from "../../helpers";
+// helpers
+import { cn } from "../helpers";
 
 export type TAvatarSize = "sm" | "md" | "base" | "lg" | number;
 
@@ -48,6 +50,11 @@ type Props = {
   className?: string;
 };
 
+/**
+ * Get the size details based on the size prop
+ * @param size The size of the avatar
+ * @returns The size details
+ */
 export const getSizeInfo = (size: TAvatarSize) => {
   switch (size) {
     case "sm":
@@ -56,7 +63,6 @@ export const getSizeInfo = (size: TAvatarSize) => {
         fontSize: "text-xs",
         spacing: "-space-x-1",
       };
-
     case "md":
       return {
         avatarSize: "h-5 w-5",
@@ -84,6 +90,11 @@ export const getSizeInfo = (size: TAvatarSize) => {
   }
 };
 
+/**
+ * Get the border radius based on the shape prop
+ * @param shape The shape of the avatar
+ * @returns The border radius
+ */
 export const getBorderRadius = (shape: "circle" | "square") => {
   switch (shape) {
     case "circle":
@@ -95,19 +106,26 @@ export const getBorderRadius = (shape: "circle" | "square") => {
   }
 };
 
+/**
+ * Check if the value is a valid number
+ * @param value The value to check
+ * @returns Whether the value is a valid number or not
+ */
 export const isAValidNumber = (value: any) => typeof value === "number" && !isNaN(value);
 
-export const Avatar = ({
-  size = "md",
-  shape = "circle",
-  src,
-  className,
-  showTooltip,
-  fallbackBackgroundColor,
-  fallbackText,
-  fallbackTextColor,
-  name,
-}: Props) => {
+export const Avatar: React.FC<Props> = (props) => {
+  const {
+    name,
+    fallbackBackgroundColor,
+    fallbackText,
+    fallbackTextColor,
+    showTooltip = true,
+    size = "md",
+    shape = "circle",
+    src,
+    className = "",
+  } = props;
+
   // get size details based on the size prop
   const sizeInfo = getSizeInfo(size);
 
@@ -117,7 +135,14 @@ export const Avatar = ({
         className={cn("grid place-items-center overflow-hidden", getBorderRadius(shape), {
           [sizeInfo.avatarSize]: !isAValidNumber(size),
         })}
-        style={isAValidNumber(size) ? { height: `${size}px`, width: `${size}px` } : {}}
+        style={
+          isAValidNumber(size)
+            ? {
+                height: `${size}px`,
+                width: `${size}px`,
+              }
+            : {}
+        }
         tabIndex={-1}
       >
         {src ? (
@@ -132,7 +157,7 @@ export const Avatar = ({
             )}
             style={{
               backgroundColor: fallbackBackgroundColor ?? "rgba(var(--color-primary-500))",
-              color: fallbackTextColor ?? "#fff",
+              color: fallbackTextColor ?? "#ffffff",
             }}
           >
             {name ? name[0].toUpperCase() : (fallbackText ?? "?")}

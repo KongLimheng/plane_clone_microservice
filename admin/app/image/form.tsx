@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { IFormattedInstanceConfiguration, TInstanceImageConfigurationKeys } from "@plane/types";
-import { Button, Spinner } from "@plane/ui";
+import { Button, setToast, Spinner, TOAST_TYPE } from "@plane/ui";
 import { ControllerInput } from "@/components/common";
 import { useInstance } from "@/hooks/store";
 
@@ -24,7 +24,18 @@ export const InstanceImageConfigForm = ({ config }: IInstanceImageConfigForm) =>
     },
   });
 
-  const onSubmit = async () => {};
+  const onSubmit = async (formData: ImageConfigFormValues) => {
+    const payload: Partial<ImageConfigFormValues> = { ...formData };
+    updateInstanceConfigurations(payload)
+      .then(() =>
+        setToast({
+          type: TOAST_TYPE.SUCCESS,
+          title: "Success",
+          message: "Image Configuration Settings updated successfully",
+        })
+      )
+      .catch((err) => console.error(err));
+  };
 
   return (
     <div className="space-y-8">

@@ -1,6 +1,7 @@
-import { Tooltip2 } from "@blueprintjs/popover2";
 import React, { useEffect, useRef, useState } from "react";
-import { cn } from "../../helpers";
+import { Tooltip2 } from "@blueprintjs/popover2";
+// helpers
+import { cn } from "../helpers";
 
 export type TPosition =
   | "top"
@@ -45,12 +46,16 @@ export const Tooltip: React.FC<ITooltipProps> = ({
   renderByDefault = true, //FIXME: tooltip should always render on hover and not by default, this is a temporary fix
 }) => {
   const toolTipRef = useRef<HTMLDivElement | null>(null);
+
   const [shouldRender, setShouldRender] = useState(renderByDefault);
+
   const onHover = () => {
     setShouldRender(true);
   };
+
   useEffect(() => {
     const element = toolTipRef.current as any;
+
     if (!element) return;
 
     element.addEventListener("mouseenter", onHover);
@@ -77,7 +82,9 @@ export const Tooltip: React.FC<ITooltipProps> = ({
         <div
           className={cn(
             "relative block z-50 max-w-xs gap-1 overflow-hidden break-words rounded-md bg-custom-background-100 p-2 text-xs text-custom-text-200 shadow-md",
-            { hidden: isMobile },
+            {
+              hidden: isMobile,
+            },
             className
           )}
         >
@@ -86,8 +93,17 @@ export const Tooltip: React.FC<ITooltipProps> = ({
         </div>
       }
       position={position}
-      renderTarget={({ isOpen: isTooltipOpen, ref: eleReference, ...tooltipProps }) =>
-        React.cloneElement(children, { ref: eleReference, ...tooltipProps, ...children.props })
+      renderTarget={({
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        isOpen: isTooltipOpen,
+        ref: eleReference,
+        ...tooltipProps
+      }) =>
+        React.cloneElement(children, {
+          ref: eleReference,
+          ...tooltipProps,
+          ...children.props,
+        })
       }
     />
   );

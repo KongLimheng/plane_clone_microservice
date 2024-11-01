@@ -12,6 +12,46 @@ ROLE_CHOICES = (
 )
 
 
+def get_default_props():
+    return {
+        "filters": {
+            "priority": None,
+            "state": None,
+            "state_group": None,
+            "assignees": None,
+            "created_by": None,
+            "labels": None,
+            "start_date": None,
+            "target_date": None,
+            "subscriber": None,
+        },
+        "display_filters": {
+            "group_by": None,
+            "order_by": "-created_at",
+            "type": None,
+            "sub_issue": True,
+            "show_empty_groups": True,
+            "layout": "list",
+            "calendar_date_range": "",
+        },
+        "display_properties": {
+            "assignee": True,
+            "attachment_count": True,
+            "created_on": True,
+            "due_date": True,
+            "estimate": True,
+            "key": True,
+            "labels": True,
+            "link": True,
+            "priority": True,
+            "start_date": True,
+            "state": True,
+            "sub_issue_count": True,
+            "updated_on": True,
+        },
+    }
+
+
 def slug_validator(value):
     if value in [
         "404",
@@ -27,6 +67,15 @@ def slug_validator(value):
         "workspace-invitations",
     ]:
         raise ValidationError("Slug is not valid")
+
+
+def get_issue_props():
+    return {
+        "subscribed": True,
+        "assigned": True,
+        "created": True,
+        "all_issues": True,
+    }
 
 
 class Workspace(BaseModel):
@@ -93,12 +142,49 @@ class WorkspaceBaseModel(BaseModel):
         super(WorkspaceBaseModel, self).save(*args, **kwargs)
 
 
+class WorkspaceMember(BaseModel):
+    workspace = models.ForeignKey(
+        Workspace,
+        on_delete=models.CASCADE,
+        related_name="workspace_member",
+    )
+    member = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="member_workspace",
+    )
+    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=5)
+    company_role = models.TextField(null=True, blank=True)
+    view_props = models.JSONField(default=get_default_props)
+    default_props = models.JSONField(default=get_default_props)
+    issue_props = models.JSONField(default=get_issue_props)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ["workspace", "member", "deleted_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["workspace", "member"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="workspace_member_unique_workspace_member_when_deleted_at_null",
+            )
+        ]
+        verbose_name = "Workspace Member"
+        verbose_name_plural = "Workspace Members"
+        db_table = "workspace_members"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        """Return members of the workspace"""
+        return f"{self.member.email} <{self.workspace.name}>"
+
+
 class WorkspaceMemberInvite(BaseModel):
     workspace = models.ForeignKey(
-        "db.Workspace",
+        Workspace,
         on_delete=models.CASCADE,
-        related_name="workspace_member_invite"
-    ),
+        related_name="workspace_member_invite",
+    )
     email = models.CharField(max_length=255)
     accepted = models.BooleanField(default=False)
     token = models.CharField(max_length=255)
@@ -107,12 +193,12 @@ class WorkspaceMemberInvite(BaseModel):
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=5)
 
     class Meta:
-        unique_together = ['email', 'workspace', 'deleted_at']
+        unique_together = ["email", "workspace", "deleted_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=['email', 'workspace'],
+                fields=["email", "workspace"],
                 condition=models.Q(deleted_at__isnull=True),
-                name="workspace_member_invite_unique_email_workspace_when_deleted_at_null"
+                name="workspace_member_invite_unique_email_workspace_when_deleted_at_null",
             )
         ]
         verbose_name = "Workspace Member Invite"

@@ -1,11 +1,17 @@
+import os
+import uuid
 from zxcvbn import zxcvbn
-from plane.authentication.adapter.error import INVALID_EMAIL, INVALID_PASSWORD, AuthenticationException
+from plane.authentication.adapter.error import INVALID_EMAIL, INVALID_PASSWORD, SIGNUP_DISABLED, AuthenticationException
 from plane.authentication.utils.host import base_host
 from plane.bgtasks.user_activation_email_task import user_activation_email
 from plane.db.models import User
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+
+from plane.license.utils.instance_value import get_configuration_value
+from plane.db.models.user import Profile
+from plane.db.models.workspace import WorkspaceMemberInvite
 
 
 class Adapter:
@@ -90,6 +96,61 @@ class Adapter:
 
     def complete_login_or_signup(self):
         email = self.user_data.get("email")
+
+        email = self.sanitize_email(email)
         user = User.objects.filter(email=email).first()
         # Check if sign up case or login
         is_signup = bool(user)
+        if not user:
+            self.__check_signup(email)
+
+            # Initialize user
+            user = User(email=email, username=uuid.uuid4().hex)
+            if self.user_data.get("user").get("is_password_autoset"):
+                user.set_password(uuid.uuid4().hex)
+                user.is_password_autoset = True
+                user.is_email_verified = True
+            else:
+                # Validate password
+                self.validate_password(email)
+                user.set_password(self.code)
+                user.is_password_autoset = False
+
+            # Set user details
+            avatar = self.user_data.get("user", {}).get("avatar", "")
+            first_name = self.user_data.get("user", {}).get("first_name", "")
+            last_name = self.user_data.get("user", {}).get("last_name", "")
+            user.avatar = avatar if avatar else ""
+            user.first_name = first_name if first_name else ""
+            user.last_name = last_name if last_name else ""
+            user.save()
+
+            Profile.objects.create(user=user)
+        user = self.save_user_data(user=user)
+        # Call callback if present
+        if self.callback:
+            self.callback(
+                user,
+                is_signup,
+                self.request,
+            )
+
+        # Create or update account if token data is present
+        if self.token_data:
+            self.create_update_account(user=user)
+        return user
+
+    def __check_signup(self, email):
+        """Check if sign up is enabled or not and raise exception if not enabled"""
+
+        (ENABLE_SIGNUP,) = get_configuration_value([
+            {
+                "key": "ENABLE_SIGNUP",
+                "default": os.environ.get("ENABLE_SIGNUP", "1"),
+            },
+        ])
+
+        if (ENABLE_SIGNUP == '0' and not WorkspaceMemberInvite.objects.filter(email=email).exists()):
+            raise AuthenticationException(
+                error_code=SIGNUP_DISABLED, error_message="SIGNUP_DISABLED", payload={"email": email})
+        return True

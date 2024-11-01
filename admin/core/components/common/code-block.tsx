@@ -1,4 +1,3 @@
-import { space } from "postcss/lib/list";
 import { cn } from "@plane/ui";
 
 type TProps = {

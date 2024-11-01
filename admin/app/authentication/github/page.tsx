@@ -74,6 +74,7 @@ const InstanceGithubAuthenticationPage = observer(() => {
               <ToggleSwitch
                 value={Boolean(parseInt(enableGithubConfig))}
                 onChange={() => {
+                  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
                   Boolean(parseInt(enableGithubConfig)) === true
                     ? updateConfig("IS_GITHUB_ENABLED", "0")
                     : updateConfig("IS_GITHUB_ENABLED", "1");

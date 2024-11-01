@@ -1,5 +1,5 @@
-const config = require("tailwind-config-custom/tailwind.config");
+import config, { content } from "tailwind-config-custom/tailwind.config";
 
-config.content.files = ["./src/**/*.{js,ts,jsx,tsx}"];
+content.files = ["./src/**/*.{js,ts,jsx,tsx}"];
 
-module.exports = config;
+export default config;

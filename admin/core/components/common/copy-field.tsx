@@ -1,3 +1,5 @@
+"use client";
+
 import { Copy } from "lucide-react";
 import { Button, setToast, TOAST_TYPE } from "@plane/ui";
 

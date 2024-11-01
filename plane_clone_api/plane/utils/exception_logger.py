@@ -12,5 +12,5 @@ def log_exception(e):
     logger.error(e)
 
     # Capture in sentry if configured
-    capture_exception(e)
+    # capture_exception(e)
     return

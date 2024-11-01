@@ -1,8 +1,11 @@
+import * as React from "react";
+import { Toaster, toast } from "sonner";
+// icons
 import { AlertTriangle, CheckCircle2, X, XCircle } from "lucide-react";
-import React from "react";
-import { toast, Toaster } from "sonner";
-import { cn } from "../../helpers";
-import { CircularBarSpinner } from "../spinner";
+// spinner
+import { CircularBarSpinner } from "../spinners";
+// helper
+import { cn } from "../helpers";
 
 export enum TOAST_TYPE {
   SUCCESS = "success",
@@ -34,10 +37,10 @@ type PromiseToastData<ToastData> = {
   actionItems?: ActionItemsPromiseToastCallback<ToastData>;
 };
 
-type PromiseToastOptions<T> = {
+type PromiseToastOptions<ToastData> = {
   loading?: string;
-  success: PromiseToastData<T>;
-  error: PromiseToastData<T>;
+  success: PromiseToastData<ToastData>;
+  error: PromiseToastData<ToastData>;
 };
 
 type ToastContentProps = {
@@ -52,7 +55,11 @@ type ToastProps = {
   theme: "light" | "dark" | "system";
 };
 
-export const Toast = ({ theme }: ToastProps) => <Toaster visibleToasts={5} gap={16} theme={theme} />;
+export const Toast = (props: ToastProps) => {
+  const { theme } = props;
+  return <Toaster visibleToasts={5} gap={16} theme={theme} />;
+};
+
 export const setToast = (props: SetToastProps) => {
   const renderToastContent = ({
     toastId,
@@ -70,10 +77,7 @@ export const setToast = (props: SetToastProps) => {
           }}
           className={cn("w-full rounded-lg border shadow-sm p-2", backgroundColorClassName, borderColorClassName)}
         >
-          <div
-            className="w-full h-full flex items-center justify-center
-					 px-4 py-2"
-          >
+          <div className="w-full h-full flex items-center justify-center px-4 py-2">
             {icon && <div className="flex items-center justify-center">{icon}</div>}
             <div className={cn("w-full flex items-center gap-0.5 pr-1", icon ? "pl-4" : "pl-1")}>
               <div className={cn("grow text-sm font-semibold", textColorClassName)}>{props.title ?? "Loading..."}</div>
@@ -92,23 +96,23 @@ export const setToast = (props: SetToastProps) => {
       </div>
     ) : (
       <div
-        className={cn(
-          "relative group flex flex-col w-[350px] rounded-lg border shadow-sm p-2",
-          backgroundColorClassName,
-          borderColorClassName
-        )}
         data-prevent-outside-click
         onMouseDown={(e) => {
           e.stopPropagation();
           e.preventDefault();
         }}
+        className={cn(
+          "relative group flex flex-col w-[350px] rounded-lg border shadow-sm p-2",
+          backgroundColorClassName,
+          borderColorClassName
+        )}
       >
         <X
+          className="fixed top-2 right-2.5 text-toast-text-secondary hover:text-toast-text-tertiary cursor-pointer"
           strokeWidth={1.5}
           width={14}
           height={14}
           onClick={() => toast.dismiss(toastId)}
-          className="fixed top-2 right-2.5 text-toast-text-secondary hover:text-toast-text-tertiary cursor-pointer"
         />
         <div className="w-full flex flex-col gap-2 p-2">
           <div className="flex items-center w-full">
@@ -136,7 +140,6 @@ export const setToast = (props: SetToastProps) => {
           }),
         props.id ? { id: props.id } : {}
       );
-
     case TOAST_TYPE.ERROR:
       return toast.custom(
         (toastId) =>
@@ -149,7 +152,6 @@ export const setToast = (props: SetToastProps) => {
           }),
         props.id ? { id: props.id } : {}
       );
-
     case TOAST_TYPE.WARNING:
       return toast.custom(
         (toastId) =>
@@ -162,7 +164,6 @@ export const setToast = (props: SetToastProps) => {
           }),
         props.id ? { id: props.id } : {}
       );
-
     case TOAST_TYPE.INFO:
       return toast.custom(
         (toastId) =>
@@ -174,6 +175,7 @@ export const setToast = (props: SetToastProps) => {
           }),
         props.id ? { id: props.id } : {}
       );
+
     case TOAST_TYPE.LOADING:
       return toast.custom((toastId) =>
         renderToastContent({
@@ -187,7 +189,10 @@ export const setToast = (props: SetToastProps) => {
   }
 };
 
-export const setPromiseToast = <ToastData,>(promise: Promise<ToastData>, options: PromiseToastOptions<ToastData>) => {
+export const setPromiseToast = <ToastData,>(
+  promise: Promise<ToastData>,
+  options: PromiseToastOptions<ToastData>
+): void => {
   const tId = setToast({ type: TOAST_TYPE.LOADING, title: options.loading });
 
   promise

@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { isEmpty } from "lodash";
 import Link from "next/link";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { IFormattedInstanceConfiguration, TInstanceGithubAuthenticationConfigurationKeys } from "@plane/types";
-import { Button, cn, getButtonStyling, Loader, setToast, Spinner, TOAST_TYPE } from "@plane/ui";
+import { Button, cn, getButtonStyling, setToast, Spinner, TOAST_TYPE } from "@plane/ui";
 import {
   CodeBlock,
   ConfirmDiscardModal,

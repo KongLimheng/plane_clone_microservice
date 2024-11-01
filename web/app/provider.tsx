@@ -9,6 +9,7 @@ import { SWR_CONFIG } from "@/constants/swr-config";
 import { resolveGeneralTheme } from "@/helpers/theme.helper";
 import { AppProgressBar } from "@/lib/n-progress";
 import { StoreProvider } from "@/lib/store-context";
+import { InstanceWrapper } from "@/lib/wrappers";
 
 const StoreWrapper = dynamic(() => import("@/lib/wrappers/store-wrapper"), { ssr: false });
 
@@ -26,9 +27,10 @@ export const AppProvider = ({ children }: IAppProvider) => (
     <StoreProvider>
       <ThemeProvider themes={["light", "dark", "light-contrast", "dark-contrast", "custom"]} defaultTheme="system">
         <ToastWithTheme />
-
         <StoreWrapper>
-          <SWRConfig value={SWR_CONFIG}>{children}</SWRConfig>
+          <InstanceWrapper>
+            <SWRConfig value={SWR_CONFIG}>{children}</SWRConfig>
+          </InstanceWrapper>
         </StoreWrapper>
       </ThemeProvider>
     </StoreProvider>

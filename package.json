@@ -10,20 +10,15 @@
     "clean": "turbo run clean",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "migrate": "python manage.py migrate --run-syncdb",
-    "migrate:make": "python manage.py makemigrations"
+    "migrate:make": "python manage.py makemigrations",
+    "storybook": "storybook dev -p 6006"
   },
   "devDependencies": {
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.6.8",
     "turbo": "^2.1.2"
   },
-  "resolutions": {
-    "@types/react": "18.2.48"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "packageManager": "npm@10.8.3",
+"packageManager": "yarn@1.22.22",
   "workspaces": [
     "admin",
     "packages/*",
