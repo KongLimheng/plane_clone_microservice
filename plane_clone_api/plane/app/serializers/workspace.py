@@ -1,5 +1,5 @@
 from plane.app.serializers.base import BaseSerializer, DynamicBaseSerializer
-from plane.db.models import Workspace, WorkspaceMemberInvite
+from plane.db.models import Workspace, WorkspaceMemberInvite, WorkspaceMember
 from plane.app.serializers import UserLiteSerializer
 from rest_framework import serializers
 from plane.utils.constants import RESTRICTED_WORKSPACE_SLUGS
@@ -59,3 +59,11 @@ class WorkSpaceMemberInviteSerializer(BaseSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class WorkspaceMemberMeSerializer(BaseSerializer):
+    draft_issue_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = WorkspaceMember
+        fields = "__all__"

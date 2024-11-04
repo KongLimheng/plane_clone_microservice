@@ -1,6 +1,7 @@
 import { action, makeObservable, observable, runInAction } from "mobx";
 import { IUserSettings } from "@plane/types";
 import { getValueFromLocalStorage, setValueIntoLocalStorage } from "@/hooks/use-local-storage";
+import { persistence } from "@/local-db/storage.sqlite";
 import { UserService } from "@/services/user.service";
 
 type TError = {
@@ -95,11 +96,11 @@ export class UserSettingsStore implements IUserSettingsStore {
       }
 
       if (currentLocalDBValue) {
-        // await persistence.clearStorage();
+        await persistence.clearStorage();
       } else if (workspaceSlug) {
-        // await persistence.initialize(workspaceSlug);
-        // persistence.syncWorkspace();
-        // projectId && persistence.syncIssues(projectId);
+        await persistence.initialize(workspaceSlug);
+        persistence.syncWorkspace();
+        projectId && persistence.syncIssues(projectId);
       }
     } catch (e) {
       console.warn("error while toggling local DB");

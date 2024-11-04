@@ -9,7 +9,7 @@ import { ContentWrapper } from "./content-wrapper";
 import { WorkspaceDashboardHeader } from "./header";
 
 const WorkspaceDashboardPage = observer(() => {
-  const { currentWorkspace, workspaces } = useWorkspace();
+  const { currentWorkspace } = useWorkspace();
 
   // derived values
   const pageTitle = currentWorkspace?.name ? `${currentWorkspace?.name} - Home` : undefined;

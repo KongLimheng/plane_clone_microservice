@@ -13,7 +13,6 @@ export const WorkspaceDashboardView = observer(() => {
   const { homeDashboardId, fetchHomeDashboardWidgets } = useDashboard();
 
   const { windowWidth } = useSize();
-  console.log(workspaceSlug);
   const handleTourCompleted = () => {
     updateTourCompleted()
       .then(() => {})

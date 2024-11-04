@@ -1,5 +1,7 @@
 import { rootStore } from "@/lib/store-context";
-import { log, logInfo } from "./utils/utils";
+import { runQuery } from "./utils/query-executor";
+import { createTables } from "./utils/tables";
+import { log, logError, logInfo } from "./utils/utils";
 
 declare module "@sqlite.org/sqlite-wasm" {
   export function sqlite3Worker1Promiser(...args: any): any;
@@ -44,16 +46,21 @@ export class Storage {
     }
   };
 
-  initalize = async (workspaceSlug: string) => {
+  initialize = async (workspaceSlug: string) => {
+    console.log(rootStore.user.localDBEnabled);
     if (document.hidden || !rootStore.user.localDBEnabled) return false;
-
     if (workspaceSlug !== this.workspaceSlug) this.reset();
 
     try {
-    } catch (error) {}
+      await this._initialize(workspaceSlug);
+    } catch (error) {
+      logError(error);
+      this.status = "error";
+      return false;
+    }
   };
 
-  _initalize = async (workspaceSlug: string) => {
+  _initialize = async (workspaceSlug: string) => {
     if (this.status === "initializing") {
       console.warn(`Initialization already in progress for workspace ${workspaceSlug}`);
       return false;
@@ -100,7 +107,33 @@ export class Storage {
           return promiser("exec", { dbId, ...val });
         },
       };
+
+      // dump DB of db version is matching
+      const dbVersion = await this.getOption("DB_VERSION");
+      if (dbVersion !== "" && parseInt(dbVersion) !== DB_VERSION) {
+        await this.clearStorage();
+        this.reset();
+        await this._initialize(workspaceSlug);
+        return false;
+      }
+
+      log(
+        "OPFS is available, created persisted database at",
+        openResponse.result.filename.replace(/^file:(.*?)\?vfs=opfs$/, "$1")
+      );
+      this.status = "ready";
+
+      // Your SQLite code here.
+      await createTables();
+      await this.setOption("DB_VERSION", DB_VERSION.toString());
     } catch (error) {}
+  };
+
+  syncWorkspace = async () => {
+    if (document.hidden || !rootStore.user.localDBEnabled) return; // return if the window gets hidden
+    // await Sentry.startSpan({ name: "LOAD_WS", attributes: { slug: this.workspaceSlug } }, async () => {
+    // await loadWorkSpaceData(this.workspaceSlug);
+    // });
   };
 
   syncProject = async (projectId: string) => {
@@ -122,4 +155,23 @@ export class Storage {
     //   this.setStatus(projectId, "error");
     // }
   };
+
+  getOption = async (key: string, fallback = "") => {
+    try {
+      const options = await runQuery(`select * from options where key='${key}'`);
+      if (options.length) {
+        return options[0].value;
+      }
+
+      return fallback;
+    } catch (e) {
+      return fallback;
+    }
+  };
+
+  setOption = async (key: string, value: string) => {
+    await runQuery(`insert or replace into options (key, value) values ('${key}', '${value}')`);
+  };
 }
+
+export const persistence = new Storage();

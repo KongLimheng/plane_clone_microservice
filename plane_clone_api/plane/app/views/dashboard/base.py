@@ -87,8 +87,6 @@ class DashboardEndpoint(BaseAPIView):
                     )
                 )
 
-                print(widgets.query)
-
                 return Response(
                     {
                         "dashboard": DashboardSerializer(dashboard).data,

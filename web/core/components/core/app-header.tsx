@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Row } from "@plane/ui";
-import { SidebarHamburgerToggle } from "../sidebar";
+import { SidebarHamburgerToggle } from "./sidebar";
 
 export interface AppHeaderProps {
   header: ReactNode;

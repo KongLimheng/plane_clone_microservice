@@ -32,7 +32,6 @@ export const AuthenticationWrapper: FC<TAuthenticationWrapper> = observer(
     const { isLoading: isUserLoading, data: currentUser, fetchCurrentUser } = useUser();
     const { data: currentUserProfile } = useUserProfile();
 
-    console.log(currentUser);
     const { data: currentUserSettings } = useUserSettings();
     const { loader: workspacesLoader, workspaces } = useWorkspace();
 

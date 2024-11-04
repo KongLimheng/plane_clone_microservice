@@ -5,3 +5,4 @@ from .workspace.invite import UserWorkspaceInvitationsViewSet
 from .external.base import UnsplashEndpoint
 from .notification.base import UserNotificationPreferenceEndpoint
 from .dashboard.base import DashboardEndpoint
+from .workspace.member import WorkspaceMemberUserEndpoint

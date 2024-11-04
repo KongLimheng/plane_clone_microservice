@@ -8,7 +8,7 @@ from .user import (
 )
 
 from .base import BaseSerializer, DynamicBaseSerializer
-from .workspace import WorkSpaceSerializer, WorkspaceLiteSerializer, WorkSpaceMemberInviteSerializer
+from .workspace import WorkSpaceSerializer, WorkspaceLiteSerializer, WorkSpaceMemberInviteSerializer, WorkspaceMemberMeSerializer
 from .issue import IssueAttachmentLiteSerializer
 from .notification import UserNotificationPreferenceSerializer
 from .dashbaord import DashboardSerializer, WidgetSerializer

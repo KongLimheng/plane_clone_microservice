@@ -1,5 +1,5 @@
 from django.urls import path
-from plane.app.views import UserWorkspaceInvitationsViewSet, WorkSpaceAvailabilityCheckEndpoint, WorkSpaceViewSet
+from plane.app.views import UserWorkspaceInvitationsViewSet, WorkSpaceAvailabilityCheckEndpoint, WorkSpaceViewSet, WorkspaceMemberUserEndpoint
 
 
 urlpatterns = [
@@ -29,5 +29,11 @@ urlpatterns = [
             },
         ),
         name="user-workspace-invitations",
+    ),
+
+    path(
+        "workspaces/<str:slug>/workspace-members/me/",
+        WorkspaceMemberUserEndpoint.as_view(),
+        name="workspace-member-details",
     ),
 ]

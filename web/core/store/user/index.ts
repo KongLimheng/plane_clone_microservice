@@ -2,7 +2,7 @@ import { cloneDeep, set } from "lodash";
 import { action, computed, makeObservable, observable, runInAction } from "mobx";
 import { IUser } from "@plane/types";
 import { API_BASE_URL } from "@/helpers/common.helper";
-import { ENABLE_LOCAL_DB_CACHE } from "@/plane-web/constants/isssues";
+import { ENABLE_LOCAL_DB_CACHE } from "@/plane-web/constants/issues";
 import { EUserPermissions, TUserPermissions } from "@/plane-web/constants/user-permissions";
 import { AuthService } from "@/services/auth.service";
 import { UserService } from "@/services/user.service";
@@ -101,7 +101,7 @@ export class UserStore implements IUserStore {
         await Promise.all([
           this.userProfile.fetchUserProfile(),
           this.userSettings.fetchCurrentUserSettings(),
-          // this.store.workspaceRoot.fetchWorkspaces(),
+          this.store.workspaceRoot.fetchWorkspaces(),
         ]);
         runInAction(() => {
           this.data = user;

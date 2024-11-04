@@ -124,7 +124,7 @@ class Workspace(BaseModel):
 
 class WorkspaceBaseModel(BaseModel):
     workspace = models.ForeignKey(
-        "db.Workspace", models.CASCADE, related_name="workspace_%(class)s"
+        Workspace, models.CASCADE, related_name="workspace_%(class)s"
     )
     project = models.ForeignKey(
         "db.Project",
