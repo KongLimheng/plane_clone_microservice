@@ -19,8 +19,10 @@ from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.generic import TemplateView
 
+handler404 = "plane.app.views.error_404.custom_404_view"
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
     path("", TemplateView.as_view(template_name="index.html")),
     path("api/", include("plane.app.urls")),
     path("api/instances/", include("plane.license.urls")),

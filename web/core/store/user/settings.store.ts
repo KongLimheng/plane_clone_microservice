@@ -84,6 +84,8 @@ export class UserSettingsStore implements IUserSettingsStore {
 
   toggleLocalDB = async (workspaceSlug: string | undefined, projectId: string | undefined) => {
     const currentLocalDBValue = this.canUseLocalDB;
+
+    console.log(currentLocalDBValue, "<><>");
     try {
       runInAction(() => {
         this.canUseLocalDB = !currentLocalDBValue;

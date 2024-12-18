@@ -1,5 +1,5 @@
 import { cn } from "@/helpers/common.helper";
-import { SidebarHamburgerToggle } from "../sidebar";
+import { SidebarHamburgerToggle } from "../core";
 
 type Props = {
   children: React.ReactNode;

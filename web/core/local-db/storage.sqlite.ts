@@ -1,7 +1,13 @@
+import { set } from "lodash";
+import { TIssue } from "@plane/types";
+import { EIssueGroupBYServerToProperty } from "@/constants/issue";
 import { rootStore } from "@/lib/store-context";
+import { IssueService } from "@/services/issue";
+import { ARRAY_FIELDS, BOOLEAN_FIELDS } from "./utils/constants";
+import { issueFilterCountQueryConstructor, issueFilterQueryConstructor } from "./utils/query-constructor";
 import { runQuery } from "./utils/query-executor";
 import { createTables } from "./utils/tables";
-import { log, logError, logInfo } from "./utils/utils";
+import { getGroupedIssueResults, getSubGroupedIssueResults, log, logError, logInfo } from "./utils/utils";
 
 declare module "@sqlite.org/sqlite-wasm" {
   export function sqlite3Worker1Promiser(...args: any): any;
@@ -47,7 +53,7 @@ export class Storage {
   };
 
   initialize = async (workspaceSlug: string) => {
-    console.log(rootStore.user.localDBEnabled);
+    console.log(workspaceSlug, "from db");
     if (document.hidden || !rootStore.user.localDBEnabled) return false;
     if (workspaceSlug !== this.workspaceSlug) this.reset();
 
@@ -172,6 +178,145 @@ export class Storage {
   setOption = async (key: string, value: string) => {
     await runQuery(`insert or replace into options (key, value) values ('${key}', '${value}')`);
   };
+
+  getStatus = (projectId: string) => this.projectStatus[projectId]?.issues?.status || undefined;
+  setStatus = (projectId: string, status: "loading" | "ready" | "error" | "syncing" | undefined = undefined) => {
+    set(this.projectStatus, `${projectId}.issues.status`, status);
+  };
+
+  getIssue = async (issueId: string) => {
+    try {
+      if (!rootStore.user.localDBEnabled) return;
+
+      const issues = await runQuery(`select * from issues where id='${issueId}'`);
+      if (issues.length) {
+        return formatLocalIssue(issues[0]);
+      }
+    } catch (err) {
+      logError(err);
+      console.warn("unable to fetch issue from local db");
+    }
+
+    return;
+  };
+
+  getIssues = async (workspaceSlug: string, projectId: string, queries: any, config: any) => {
+    log("#### Queries", queries);
+
+    const currentProjectStatus = this.getStatus(projectId);
+    if (
+      !currentProjectStatus ||
+      this.status !== "ready" ||
+      currentProjectStatus === "loading" ||
+      currentProjectStatus === "error" ||
+      !rootStore.user.localDBEnabled
+    ) {
+      if (rootStore.user.localDBEnabled) {
+        log(`Project ${projectId} is loading, falling back to server`);
+      }
+      const issueService = new IssueService();
+      return await issueService.getIssuesFromServer(workspaceSlug, projectId, queries, config);
+    }
+
+    const { cursor, group_by, sub_group_by } = queries;
+
+    const query = issueFilterQueryConstructor(this.workspaceSlug, projectId, queries);
+    log("#### Query", query);
+    const countQuery = issueFilterCountQueryConstructor(this.workspaceSlug, projectId, queries);
+    const start = performance.now();
+    let issuesRaw: any[] = [];
+    let count: any[];
+    try {
+      [issuesRaw, count] = await startSpan(
+        { name: "GET_ISSUES" },
+        async () => await Promise.all([runQuery(query), runQuery(countQuery)])
+      );
+    } catch (e) {
+      logError(e);
+      const issueService = new IssueService();
+      return await issueService.getIssuesFromServer(workspaceSlug, projectId, queries, config);
+    }
+    const end = performance.now();
+
+    const { total_count } = count[0];
+
+    const [pageSize, page, offset] = cursor.split(":");
+
+    const groupByProperty: string =
+      EIssueGroupBYServerToProperty[group_by as keyof typeof EIssueGroupBYServerToProperty];
+    const subGroupByProperty =
+      EIssueGroupBYServerToProperty[sub_group_by as keyof typeof EIssueGroupBYServerToProperty];
+
+    const parsingStart = performance.now();
+    let issueResults = issuesRaw.map((issue: any) => formatLocalIssue(issue));
+
+    log("#### Issue Results", issueResults.length);
+
+    const parsingEnd = performance.now();
+
+    const grouping = performance.now();
+    if (groupByProperty && page === "0") {
+      if (subGroupByProperty) {
+        issueResults = getSubGroupedIssueResults(issueResults);
+      } else {
+        issueResults = getGroupedIssueResults(issueResults);
+      }
+    }
+    const groupCount = group_by ? Object.keys(issueResults).length : undefined;
+    // const subGroupCount = sub_group_by ? Object.keys(issueResults[Object.keys(issueResults)[0]]).length : undefined;
+    const groupingEnd = performance.now();
+
+    const times = {
+      IssueQuery: end - start,
+      Parsing: parsingEnd - parsingStart,
+      Grouping: groupingEnd - grouping,
+    };
+    if ((window as any).DEBUG) {
+      console.table(times);
+    }
+    const total_pages = Math.ceil(total_count / Number(pageSize));
+    const next_page_results = total_pages > parseInt(page) + 1;
+
+    const out = {
+      results: issueResults,
+      next_cursor: `${pageSize}:${parseInt(page) + 1}:${Number(offset) + Number(pageSize)}`,
+      prev_cursor: `${pageSize}:${parseInt(page) - 1}:${Number(offset) - Number(pageSize)}`,
+      total_results: total_count,
+      total_count,
+      next_page_results,
+      total_pages,
+    };
+
+    // const activeSpan = getActiveSpan();
+    // activeSpan?.setAttributes({
+    //   projectId,
+    //   count: total_count,
+    //   groupBy: group_by,
+    //   subGroupBy: sub_group_by,
+    //   queries: queries,
+    //   local: true,
+    //   groupCount,
+    //   // subGroupCount,
+    // });
+    return out;
+  };
 }
 
 export const persistence = new Storage();
+
+/**
+ * format the issue fetched from local db into an issue
+ * @param issue
+ * @returns
+ */
+export const formatLocalIssue = (issue: any) => {
+  const currIssue = issue;
+  ARRAY_FIELDS.forEach((field: string) => {
+    currIssue[field] = currIssue[field] ? JSON.parse(currIssue[field]) : [];
+  });
+  // Convert boolean fields to actual boolean values
+  BOOLEAN_FIELDS.forEach((field: string) => {
+    currIssue[field] = currIssue[field] === 1;
+  });
+  return currIssue as TIssue & { group_id?: string; total_issues: number; sub_group_id?: string };
+};

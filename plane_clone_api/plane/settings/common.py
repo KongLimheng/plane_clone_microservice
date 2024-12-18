@@ -26,7 +26,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    # 'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "plane.license",
     "plane.space",
     "plane.app",
+    "plane.api",
 
     # Third-party things
     "rest_framework",
@@ -50,15 +51,15 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "plane.authentication.middleware.session.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "crum.CurrentRequestUserMiddleware",
     "django.middleware.gzip.GZipMiddleware",
+    "plane.middleware.api_log_middleware.APITokenLogMiddleware",
 ]
 
 # Rest Framework settings
@@ -73,7 +74,7 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": (
         "django_filters.rest_framework.DjangoFilterBackend",
     ),
-    # "EXCEPTION_HANDLER": "plane.authentication.adapter.exception.auth_exception_handler",
+    "EXCEPTION_HANDLER": "plane.authentication.adapter.exception.auth_exception_handler",
 }
 
 # Django Auth Backend
@@ -222,10 +223,14 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
-
-STORAGES["default"] = {
-    "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-}
+if DEBUG:
+    STORAGES['default'] = {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    }
+else:
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    }
 
 # AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "access-key")
 # AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "secret-key")
@@ -242,17 +247,26 @@ STORAGES["default"] = {
 #     AWS_S3_CUSTOM_DOMAIN = f"{parsed_url.netloc}/{AWS_STORAGE_BUCKET_NAME}"
 #     AWS_S3_URL_PROTOCOL = f"{parsed_url.scheme}:"
 
+# RabbitMQ connection settings
+RABBITMQ_HOST = env("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = env("RABBITMQ_PORT", "5672")
+RABBITMQ_USER = env("RABBITMQ_USER", "guest")
+RABBITMQ_PASSWORD = env("RABBITMQ_PASSWORD", "guest")
+RABBITMQ_VHOST = env("RABBITMQ_VHOST", "/")
+AMQP_URL = env("AMQP_URL")
+
+# Celery Configuration
+if AMQP_URL:
+    CELERY_BROKER_URL = AMQP_URL
+else:
+    CELERY_BROKER_URL = f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASSWORD}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/{RABBITMQ_VHOST}"
+
 # Celery Configuration
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["application/json"]
 
-if REDIS_SSL:
-    redis_url = env("REDIS_URL")
-    broker_url = f"{redis_url}?ssl_cert_reqs={ssl.CERT_NONE.name}&ssl_ca_certs={certifi.where()}"
-    CELERY_BROKER_URL = broker_url
-else:
-    CELERY_BROKER_URL = REDIS_URL
 
 # CELERY_IMPORTS = (
 #     # scheduled tasks
@@ -295,9 +309,9 @@ UNSPLASH_ACCESS_KEY = env("UNSPLASH_ACCESS_KEY")
 # Github Access Token
 GITHUB_ACCESS_TOKEN = env("GITHUB_ACCESS_TOKEN", False)
 
-# # Analytics
-# ANALYTICS_SECRET_KEY = env("ANALYTICS_SECRET_KEY", False)
-# ANALYTICS_BASE_API = env("ANALYTICS_BASE_API", False)
+# Analytics
+ANALYTICS_SECRET_KEY = env("ANALYTICS_SECRET_KEY", False)
+ANALYTICS_BASE_API = env("ANALYTICS_BASE_API", False)
 
 # instance key
 INSTANCE_KEY = env(
@@ -315,7 +329,7 @@ SESSION_COOKIE_SECURE = secure_origins
 SESSION_COOKIE_HTTPONLY = True
 SESSION_ENGINE = "plane.db.models.session"
 SESSION_COOKIE_AGE = env("SESSION_COOKIE_AGE", 604800)
-SESSION_COOKIE_NAME = "plane-session-id"
+SESSION_COOKIE_NAME = env("SESSION_COOKIE_NAME", 'plane-session-id')
 SESSION_COOKIE_DOMAIN = env("COOKIE_DOMAIN", None)
 SESSION_SAVE_EVERY_REQUEST = (
     env("SESSION_SAVE_EVERY_REQUEST", "0") == "1"
@@ -330,9 +344,72 @@ CSRF_COOKIE_SECURE = secure_origins
 CSRF_COOKIE_HTTPONLY = True
 CSRF_TRUSTED_ORIGINS = cors_allowed_origins
 CSRF_COOKIE_DOMAIN = env("COOKIE_DOMAIN", None)
-# CSRF_FAILURE_VIEW = "plane.authentication.views.common.csrf_failure"
+CSRF_FAILURE_VIEW = "plane.authentication.views.common.csrf_failure"
 
 # Base URLs
-ADMIN_BASE_URL = os.environ.get("ADMIN_BASE_URL", None)
-SPACE_BASE_URL = os.environ.get("SPACE_BASE_URL", None)
-APP_BASE_URL = os.environ.get("APP_BASE_URL")
+ADMIN_BASE_URL = env("ADMIN_BASE_URL", None)
+SPACE_BASE_URL = env("SPACE_BASE_URL", None)
+APP_BASE_URL = env("APP_BASE_URL")
+
+HARD_DELETE_AFTER_DAYS = int(env("HARD_DELETE_AFTER_DAYS", 60))
+
+# Instance Changelog URL
+INSTANCE_CHANGELOG_URL = env("INSTANCE_CHANGELOG_URL", "")
+ATTACHMENT_MIME_TYPES = [
+    # Images
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/svg+xml",
+    "image/webp",
+    "image/tiff",
+    "image/bmp",
+    # Documents
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "text/plain",
+    "application/rtf",
+    # Audio
+    "audio/mpeg",
+    "audio/wav",
+    "audio/ogg",
+    "audio/midi",
+    "audio/x-midi",
+    "audio/aac",
+    "audio/flac",
+    "audio/x-m4a",
+    # Video
+    "video/mp4",
+    "video/mpeg",
+    "video/ogg",
+    "video/webm",
+    "video/quicktime",
+    "video/x-msvideo",
+    "video/x-ms-wmv",
+    # Archives
+    "application/zip",
+    "application/x-rar-compressed",
+    "application/x-tar",
+    "application/gzip",
+    # 3D Models
+    "model/gltf-binary",
+    "model/gltf+json",
+    "application/octet-stream",  # for .obj files, but be cautious
+    # Fonts
+    "font/ttf",
+    "font/otf",
+    "font/woff",
+    "font/woff2",
+    # Other
+    "text/css",
+    "text/javascript",
+    "application/json",
+    "text/xml",
+    "text/csv",
+    "application/xml",
+]

@@ -1,6 +1,6 @@
 import React from "react";
 import { ERowVariant, rowStyle, TRowVariant } from "./helper";
-import { cn } from "../helpers";
+import { cn } from "../../helpers";
 
 export interface RowProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: TRowVariant;

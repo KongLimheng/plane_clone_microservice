@@ -1,18 +1,21 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { ArchiveIcon, ChevronRight, MoreHorizontal, Settings } from "lucide-react";
 import { Disclosure, Transition } from "@headlessui/react";
-import { Tooltip } from "@plane/ui";
+import { useOutsideClickDetector } from "@plane/helpers";
+import { CustomMenu, Tooltip } from "@plane/ui";
+import { SidebarNavItem } from "@/components/sidebar";
 import { SIDEBAR_WORKSPACE_MENU_ITEMS } from "@/constants/dashboard";
 import { cn } from "@/helpers/common.helper";
 import { useAppTheme, useUserPermissions } from "@/hooks/store";
 import useLocalStorage from "@/hooks/use-local-storage";
 import { usePlatformOS } from "@/hooks/use-platform-os";
-import { EUserPermissionsLevel } from "@/plane-web/constants/user-permissions";
+import { UpgradeBadge } from "@/plane-web/components/workspace";
+import { EUserPermissions, EUserPermissionsLevel } from "@/plane-web/constants/user-permissions";
 
 export const SidebarWorkspaceMenu = observer(() => {
   // state
@@ -34,7 +37,26 @@ export const SidebarWorkspaceMenu = observer(() => {
   // derived values
   const isWorkspaceMenuOpen = !!storedValue;
 
-  console.log(storedValue);
+  const isAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE);
+  const handleLinkClick = (itemKey: string) => {
+    if (window.innerWidth < 768) {
+      toggleSidebar();
+    }
+  };
+
+  useEffect(() => {
+    if (sidebarCollapsed) toggleWorkspaceMenu(true);
+  }, [sidebarCollapsed, toggleWorkspaceMenu]);
+
+  useOutsideClickDetector(actionSectionRef, () => {
+    setIsMenuActive(false);
+  });
+
+  const indicatorElement = (
+    <div className="flex-shrink-0">
+      <UpgradeBadge />
+    </div>
+  );
 
   return (
     <Disclosure defaultOpen as={"div"}>
@@ -54,6 +76,49 @@ export const SidebarWorkspaceMenu = observer(() => {
           >
             <span>WORKSPACE</span>
           </Disclosure.Button>
+
+          <CustomMenu
+            customButton={
+              <span
+                ref={actionSectionRef}
+                onClick={() => {
+                  setIsMenuActive(!isMenuActive);
+                }}
+                className="grid place-items-center p-0.5 text-custom-sidebar-text-400 hover:bg-custom-sidebar-background-80 rounded my-auto"
+              >
+                <MoreHorizontal className="size-4" />
+              </span>
+            }
+            className={cn(
+              "h-full flex items-center opacity-0 z-20 pointer-events-none flex-shrink-0 group-hover/workspace-button:opacity-100 group-hover/workspace-button:pointer-events-auto my-auto",
+              {
+                "opacity-100 pointer-events-auto": isMenuActive,
+              }
+            )}
+            customButtonClassName="grid place-items-center"
+            placement="bottom-start"
+            useCaptureForOutsideClick
+          >
+            <CustomMenu.MenuItem>
+              <Link href={`/${workspaceSlug}/projects/archives`}>
+                <div className="flex items-center just gap-2">
+                  <ArchiveIcon className="size-3.5 stroke-[1.5]" />
+                  <span>Archives</span>
+                </div>
+              </Link>
+            </CustomMenu.MenuItem>
+
+            {isAdmin && (
+              <CustomMenu.MenuItem>
+                <Link href={`/${workspaceSlug}/settings`}>
+                  <div className="flex items-center justify-start gap-2">
+                    <Settings className="h-3.5 w-3.5 stroke-[1.5]" />
+                    <span>Settings</span>
+                  </div>
+                </Link>
+              </CustomMenu.MenuItem>
+            )}
+          </CustomMenu>
 
           <Disclosure.Button
             as="button"
@@ -81,7 +146,11 @@ export const SidebarWorkspaceMenu = observer(() => {
         leaveTo="transform scale-95 opacity-0"
       >
         {isWorkspaceMenuOpen && (
-          <Disclosure.Panel>
+          <Disclosure.Panel
+            as="div"
+            className={cn("flex flex-col mt-0.5 gap-0.5", { "space-y-0 mt-0 ml-0": sidebarCollapsed })}
+            static
+          >
             {SIDEBAR_WORKSPACE_MENU_ITEMS.map(
               (link) =>
                 allowPermissions(link.access, EUserPermissionsLevel.WORKSPACE, workspaceSlug.toString()) && (
@@ -93,7 +162,19 @@ export const SidebarWorkspaceMenu = observer(() => {
                     disabled={!sidebarCollapsed}
                     isMobile={isMobile}
                   >
-                    <Link href={link.href}>link</Link>
+                    <Link href={`/${workspaceSlug}${link.href}`} onClick={() => handleLinkClick(link.key)}>
+                      <SidebarNavItem
+                        key={link.key}
+                        className={cn({ "p-0 size-8 aspect-square justify-center mx-auto": sidebarCollapsed })}
+                        isActive={link.highlight(pathname, `/${workspaceSlug}`)}
+                      >
+                        <div className="flex items-center gap-1.5 py-[1px]">
+                          <link.Icon className={cn("size-4", { "rotate-180": link.key === "active-cycles" })} />
+                          {!sidebarCollapsed && <p className="text-sm leading-5 font-medium">{link.label}</p>}
+                        </div>
+                        {!sidebarCollapsed && link.key === "active-cycles" && indicatorElement}
+                      </SidebarNavItem>
+                    </Link>
                   </Tooltip>
                 )
             )}

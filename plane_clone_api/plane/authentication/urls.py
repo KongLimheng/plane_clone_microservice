@@ -14,7 +14,7 @@ urlpatterns = [
     ),
     # space credential
     path('space/sign-in/',
-         csrf_exempt(SignInAuthSpaceEndpoint.as_view()), name='sign-in'),
+         SignInAuthSpaceEndpoint.as_view(), name='sign-in'),
 
     # csrf token
     path(

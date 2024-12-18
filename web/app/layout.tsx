@@ -75,17 +75,16 @@ export default function RootLayout({
       </head>
 
       <body>
-        <div id="context-menu-portal">
-          <AppProvider>
-            <div
-              className={cn(
-                "h-screen w-full overflow-hidden bg-custom-background-100 relative flex flex-col app-container"
-              )}
-            >
-              <div className="w-full h-full overflow-hidden relative">{children}</div>
-            </div>
-          </AppProvider>
-        </div>
+        <div id="context-menu-portal" />
+        <AppProvider>
+          <div
+            className={cn(
+              "h-screen w-full overflow-hidden bg-custom-background-100 relative flex flex-col app-container"
+            )}
+          >
+            <div className="w-full h-full overflow-hidden relative">{children}</div>
+          </div>
+        </AppProvider>
       </body>
     </html>
   );

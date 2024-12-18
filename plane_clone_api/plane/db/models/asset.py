@@ -1,12 +1,19 @@
 from uuid import uuid4
 from .base import BaseModel
 from django.db import models
+from django.core.exceptions import ValidationError
+from django.conf import settings
 
 
 def get_upload_path(instance, filename):
     if instance.workspace_id is not None:
         return f"{instance.workspace.id}/{uuid4().hex}-{filename}"
     return f"user-{uuid4().hex}-{filename}"
+
+
+def file_size(value):
+    if value.size > settings.FILE_SIZE_LIMIT:
+        raise ValidationError("File too large. Size should not exceed 5 MB.")
 
 
 class FileAsset(BaseModel):
@@ -27,18 +34,20 @@ class FileAsset(BaseModel):
 
     attributes = models.JSONField(default=dict)
     asset = models.FileField(
-        upload_to=get_upload_path, max_length=800
+        upload_to=get_upload_path, max_length=800, storage="uploads/"
     )
+
     user = models.ForeignKey(
         "db.User", on_delete=models.CASCADE, null=True, related_name="assets")
     workspace = models.ForeignKey(
-        "db.Workspace", on_delete=models.CASCADE, null=True, related_name="assets"),
-    # draft_issue = models.ForeignKey(
-    #     "db.DraftIssue", on_delete=models.CASCADE, null=True, related_name="assets"),
-    # project = models.ForeignKey(
-    #     "db.Project", on_delete=models.CASCADE, null=True, related_name="assets"),
-    # issue = models.ForeignKey(
-    #     "db.Issue", on_delete=models.CASCADE, null=True, related_name="assets"),
+        "db.Workspace", on_delete=models.CASCADE, null=True, related_name="assets")
+    draft_issue = models.ForeignKey(
+        "db.DraftIssue", on_delete=models.CASCADE, null=True, related_name="assets")
+    project = models.ForeignKey(
+        "db.Project", on_delete=models.CASCADE, null=True, related_name="assets")
+
+    issue = models.ForeignKey(
+        "db.Issue", on_delete=models.CASCADE, null=True, related_name="assets")
     # comment = models.ForeignKey(
     #     "db.IssueComment",
     #     on_delete=models.CASCADE,

@@ -1,4 +1,11 @@
-import { IWorkspace, IWorkspaceMemberInvitation, IWorkspaceMemberMe } from "@plane/types";
+import {
+  IUserProjectsRole,
+  IWorkspace,
+  IWorkspaceMember,
+  IWorkspaceMemberInvitation,
+  IWorkspaceMemberMe,
+  IWorkspaceSearchResults,
+} from "@plane/types";
 import { APIService } from "./api.service";
 
 export class WorkspaceService extends APIService {
@@ -51,6 +58,47 @@ export class WorkspaceService extends APIService {
       .then((response) => response?.data)
       .catch((error) => {
         throw error?.response;
+      });
+  }
+
+  async searchWorkspace(
+    workspaceSlug: string,
+    params: {
+      project_id?: string;
+      search: string;
+      workspace_search: boolean;
+    }
+  ): Promise<IWorkspaceSearchResults> {
+    return this.get(`/api/workspaces/${workspaceSlug}/search/`, {
+      params,
+    })
+      .then((res) => res?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async getWorkspaceUserProjectsRole(workspaceSlug: string): Promise<IUserProjectsRole> {
+    return this.get(`/api/users/me/workspaces/${workspaceSlug}/project-roles/`)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async fetchWorkspaceMembers(workspaceSlug: string): Promise<IWorkspaceMember[]> {
+    return this.get(`/api/workspaces/${workspaceSlug}/members/`)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async updateWorkspace(workspaceSlug: string, data: Partial<IWorkspace>): Promise<IWorkspace> {
+    return this.patch(`/api/workspaces/${workspaceSlug}/`, data)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
       });
   }
 }

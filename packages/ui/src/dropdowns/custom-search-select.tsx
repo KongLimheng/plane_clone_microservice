@@ -1,7 +1,7 @@
 import React, { Fragment, useCallback, useRef, useState } from "react";
 import { ICustomSearchSelectProps } from "./helper";
 import { Combobox } from "@headlessui/react";
-import { cn } from "../helpers";
+import { cn } from "../../helpers";
 import { Check, ChevronDown, Info, Search } from "lucide-react";
 import { createPortal } from "react-dom";
 import { usePopper } from "react-popper";

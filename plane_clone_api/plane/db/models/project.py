@@ -1,6 +1,8 @@
 from django.db import models
 from django.db.models import Q
 
+from plane.db.mixins import AuditModel
+
 from .asset import FileAsset
 from .workspace import Workspace
 from .base import BaseModel
@@ -89,7 +91,7 @@ class Project(BaseModel):
     cycle_view = models.BooleanField(default=True)
     issue_views_view = models.BooleanField(default=True)
     page_view = models.BooleanField(default=True)
-    inbox_view = models.BooleanField(default=False)
+    intake_view = models.BooleanField(default=False)
     is_time_tracking_enabled = models.BooleanField(default=False)
     is_issue_type_enabled = models.BooleanField(default=False)
     guest_view_all_features = models.BooleanField(default=False)
@@ -101,12 +103,12 @@ class Project(BaseModel):
         blank=True,
         related_name="project_cover_image",
     )
-    # estimate = models.ForeignKey(
-    #     "db.Estimate",
-    #     on_delete=models.SET_NULL,
-    #     related_name="projects",
-    #     null=True,
-    # )
+    estimate = models.ForeignKey(
+        "db.Estimate",
+        on_delete=models.SET_NULL,
+        related_name="projects",
+        null=True,
+    )
     archive_in = models.IntegerField(
         default=0, validators=[MinValueValidator(0), MaxValueValidator(12)]
     )
@@ -114,12 +116,12 @@ class Project(BaseModel):
         default=0, validators=[MinValueValidator(0), MaxValueValidator(12)]
     )
     logo_props = models.JSONField(default=dict)
-    # default_state = models.ForeignKey(
-    #     "db.State",
-    #     on_delete=models.SET_NULL,
-    #     null=True,
-    #     related_name="default_state",
-    # )
+    default_state = models.ForeignKey(
+        "db.State",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="default_state",
+    )
     archived_at = models.DateTimeField(null=True)
     # timezone
     TIMEZONE_CHOICES = tuple(zip(pytz.all_timezones, pytz.all_timezones))
@@ -251,3 +253,29 @@ class ProjectMember(ProjectBaseModel):
     def __str__(self):
         """Return members of the project"""
         return f"{self.member.email} <{self.project.name}>"
+
+
+class ProjectIdentifier(AuditModel):
+    workspace = models.ForeignKey(
+        Workspace, models.CASCADE,
+        related_name="project_identifiers",
+        null=True
+    )
+    project = models.OneToOneField(
+        Project, on_delete=models.CASCADE, related_name="project_identifier"
+    )
+    name = models.CharField(max_length=12, db_index=True)
+
+    class Meta:
+        unique_together = ["name", "workspace", "deleted_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "workspace"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_name_workspace_when_deleted_at_null",
+            )
+        ]
+        verbose_name = "Project Identifier"
+        verbose_name_plural = "Project Identifiers"
+        db_table = "project_identifiers"
+        ordering = ("-created_at",)

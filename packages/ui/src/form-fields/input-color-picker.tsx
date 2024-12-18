@@ -6,7 +6,7 @@ import { Input } from "./input";
 import { usePopper } from "react-popper";
 import { Button } from "../button";
 // helpers
-import { cn } from "../helpers";
+import { cn } from "../../helpers";
 
 export interface InputColorPickerProps {
   hasError: boolean;

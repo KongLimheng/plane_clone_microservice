@@ -30,12 +30,13 @@ urlpatterns = [
 
     path(
         "admins/sign-up/",
-        csrf_exempt(InstanceAdminSignUpEndpoint.as_view()),
+        InstanceAdminSignUpEndpoint.as_view(),
         name="instance-admin-sign-up",
     ),
+
     path(
         "admins/sign-out/",
-        csrf_exempt(InstanceAdminSignOutEndpoint.as_view()),
+        InstanceAdminSignOutEndpoint.as_view(),
         name="instance-admins",
     ),
 

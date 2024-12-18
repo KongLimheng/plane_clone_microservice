@@ -2,7 +2,7 @@ import React from "react";
 // ui
 import { Tooltip } from "../tooltip";
 // helpers
-import { cn } from "../helpers";
+import { cn } from "../../helpers";
 // types
 import { TAvatarSize, getSizeInfo, isAValidNumber } from "./avatar";
 

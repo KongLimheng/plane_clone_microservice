@@ -7,6 +7,7 @@ import { LogOut, Palette, UserCog2 } from "lucide-react";
 import { Menu, MenuButton, MenuItem, MenuItems, Transition } from "@headlessui/react";
 import { Avatar, cn } from "@plane/ui";
 import { API_BASE_URL } from "@/helpers/common.helper";
+import { getFileURL } from "@/helpers/file.helper";
 import { useTheme, useUser } from "@/hooks/store";
 import { AuthService } from "@/services/auth.service";
 
@@ -114,7 +115,7 @@ export const SidebarDropdown = observer(() => {
           <MenuButton className={"grid place-items-center outline-none"}>
             <Avatar
               name={currentUser.display_name}
-              src={currentUser.avatar ?? undefined}
+              src={getFileURL(currentUser.avatar_url)}
               size={24}
               shape="square"
               className="!text-base"

@@ -153,7 +153,7 @@ export const InstanceSetupForm: FC = () => {
           )}
 
         <form
-          action={`${API_BASE_URL}/api/instance/admins/sign-up/`}
+          action={`${API_BASE_URL}/api/instances/admins/sign-up/`}
           method="POST"
           onSubmit={() => setIsSubmitting(true)}
           onError={() => setIsSubmitting(false)}

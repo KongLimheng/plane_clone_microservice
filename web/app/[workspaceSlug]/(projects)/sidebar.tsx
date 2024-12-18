@@ -1,7 +1,14 @@
 import { useEffect, useRef } from "react";
 import { observer } from "mobx-react";
 import { useOutsideClickDetector } from "@plane/helpers";
-import { SidebarDropdown, SidebarUserMenu, SidebarWorkspaceMenu } from "@/components/workspace";
+import {
+  SidebarDropdown,
+  SidebarHelpSection,
+  SidebarProjectsList,
+  SidebarQuickActions,
+  SidebarUserMenu,
+  SidebarWorkspaceMenu,
+} from "@/components/workspace";
 import { cn } from "@/helpers/common.helper";
 import { useAppTheme, useUserPermissions } from "@/hooks/store";
 import useSize from "@/hooks/use-window-size";
@@ -33,8 +40,6 @@ export const AppSidebar = observer(() => {
     if (windowWidth < 768 && !sidebarCollapsed) toggleSidebar();
   }, [windowWidth, sidebarCollapsed, toggleSidebar]);
 
-  console.log(canPerformWorkspaceMemberActions);
-
   return (
     <div
       className={cn(
@@ -52,6 +57,7 @@ export const AppSidebar = observer(() => {
         >
           <SidebarDropdown />
           <div className="flex-shrink-0 h-4" />
+          <SidebarQuickActions />
         </div>
 
         <hr
@@ -67,13 +73,15 @@ export const AppSidebar = observer(() => {
         >
           <SidebarUserMenu />
           <SidebarWorkspaceMenu />
-
           <hr
             className={cn("flex-shrink-0 border-custom-sidebar-border-300 h-[0.5px] w-3/5 mx-auto my-1", {
               "opacity-0": !sidebarCollapsed,
             })}
           />
+
+          <SidebarProjectsList />
         </div>
+        <SidebarHelpSection />
       </div>
     </div>
   );

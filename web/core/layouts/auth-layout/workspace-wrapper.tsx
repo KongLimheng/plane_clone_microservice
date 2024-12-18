@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { observer } from "mobx-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import useSWR from "swr";
 import useSWRImmutable from "swr/immutable";
@@ -11,9 +12,12 @@ import { LogOut } from "lucide-react";
 import { Button, setToast, TOAST_TYPE, Tooltip } from "@plane/ui";
 import { LogoSpinner } from "@/components/common/logo-spinner";
 import { useRouterParams, useUser, useUserPermissions, useWorkspace } from "@/hooks/store";
+import { useMember } from "@/hooks/store/use-member";
+import { useProject } from "@/hooks/store/use-project";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // images
 import { persistence } from "@/local-db/storage.sqlite";
+import { EUserPermissions, EUserPermissionsLevel } from "@/plane-web/constants/user-permissions";
 import PlaneBlackLogo from "@/public/plane-logos/black-horizontal-with-blue-logo.png";
 import PlaneWhiteLogo from "@/public/plane-logos/white-horizontal-with-blue-logo.png";
 import WorkSpaceNotAvailable from "@/public/workspace/workspace-not-available.png";
@@ -29,15 +33,23 @@ export const WorkspaceAuthWrapper = observer(({ children }: IWorkspaceAuthWrappe
   const { resolvedTheme } = useTheme();
   // store hooks
   const { signOut, data: currentUser } = useUser();
-
+  const {
+    workspace: { fetchWorkspaceMembers },
+  } = useMember();
+  const { fetchProjects } = useProject();
   const { workspaces } = useWorkspace();
   const { isMobile } = usePlatformOS();
 
-  const { loader, fetchUserWorkspaceInfo, workspaceInfoBySlug } = useUserPermissions();
+  const { loader, fetchUserWorkspaceInfo, fetchUserProjectPermissions, workspaceInfoBySlug, allowPermissions } =
+    useUserPermissions();
   const planeLogo = resolvedTheme === "dark" ? PlaneWhiteLogo : PlaneBlackLogo;
 
   const allWorkspaces = workspaces ? Object.values(workspaces) : undefined;
-
+  // derived values
+  const canPerformWorkspaceMemberActions = allowPermissions(
+    [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
+    EUserPermissionsLevel.WORKSPACE
+  );
   const currentWorkspace =
     (allWorkspaces && allWorkspaces.find((workspace) => workspace?.slug === workspaceSlug)) || undefined;
 
@@ -45,6 +57,26 @@ export const WorkspaceAuthWrapper = observer(({ children }: IWorkspaceAuthWrappe
     workspaceSlug && currentWorkspace ? `WORKSPACE_MEMBER_ME_INFORMATION_${workspaceSlug}` : null,
     workspaceSlug && currentWorkspace ? () => fetchUserWorkspaceInfo(workspaceSlug?.toString()) : null,
     { revalidateOnFocus: false, revalidateIfStale: false }
+  );
+
+  useSWR(
+    workspaceSlug && currentWorkspace ? `WORKSPACE_PROJECTS_ROLES_INFORMATION_${workspaceSlug}` : null,
+    workspaceSlug && currentWorkspace ? () => fetchUserProjectPermissions(workspaceSlug) : null,
+    { revalidateIfStale: false, revalidateOnFocus: false }
+  );
+
+  // fetching workspace projects
+  useSWR(
+    workspaceSlug && currentWorkspace ? `WORKSPACE_PROJECTS_${workspaceSlug}` : null,
+    workspaceSlug && currentWorkspace ? () => fetchProjects(workspaceSlug) : null,
+    { revalidateIfStale: false, revalidateOnFocus: false }
+  );
+
+  // fetch workspace members
+  useSWR(
+    workspaceSlug && currentWorkspace ? `WORKSPACE_MEMBERS_${workspaceSlug}` : null,
+    workspaceSlug && currentWorkspace ? () => fetchWorkspaceMembers(workspaceSlug.toString()) : null,
+    { revalidateIfStale: false, revalidateOnFocus: false }
   );
 
   // initialize the local database

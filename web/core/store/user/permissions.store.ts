@@ -9,6 +9,7 @@ import {
   TUserPermissionsLevel,
 } from "@/plane-web/constants/user-permissions";
 import { WorkspaceService } from "@/plane-web/services";
+import projectMemberService from "@/services/project/project-member.service";
 import { CoreRootStore } from "../root.store";
 
 export interface IUserPermissionStore {
@@ -20,10 +21,10 @@ export interface IUserPermissionStore {
   // computed
   // computed helpers
   workspaceInfoBySlug: (workspaceSlug: string) => IWorkspaceMemberMe | undefined;
-  // projectPermissionsByWorkspaceSlugAndProjectId: (
-  //   workspaceSlug: string,
-  //   projectId: string
-  // ) => TUserPermissions | undefined;
+  projectPermissionsByWorkspaceSlugAndProjectId: (
+    workspaceSlug: string,
+    projectId: string
+  ) => TUserPermissions | undefined;
   allowPermissions: (
     allowPermissions: TUserPermissions[],
     level: TUserPermissionsLevel,
@@ -35,8 +36,8 @@ export interface IUserPermissionStore {
   // actions
   fetchUserWorkspaceInfo: (workspaceSlug: string) => Promise<IWorkspaceMemberMe | undefined>;
   // leaveWorkspace: (workspaceSlug: string) => Promise<void>;
-  // fetchUserProjectInfo: (workspaceSlug: string, projectId: string) => Promise<IProjectMember | undefined>;
-  // fetchUserProjectPermissions: (workspaceSlug: string) => Promise<IUserProjectsRole | undefined>;
+  fetchUserProjectInfo: (workspaceSlug: string, projectId: string) => Promise<IProjectMember | undefined>;
+  fetchUserProjectPermissions: (workspaceSlug: string) => Promise<IUserProjectsRole | undefined>;
   // joinProject: (workspaceSlug: string, projectId: string) => Promise<void | undefined>;
   // leaveProject: (workspaceSlug: string, projectId: string) => Promise<void>;
 }
@@ -50,6 +51,7 @@ export class UserPermissionStore implements IUserPermissionStore {
   workspaceUserInfo: Record<string, IWorkspaceMemberMe> = {};
   projectUserInfo: Record<string, Record<string, IProjectMember>> = {};
   workspaceProjectsPermissions: Record<string, IUserProjectsRole> = {};
+  projectMemberService;
   // observables
 
   constructor(private store: CoreRootStore) {
@@ -63,11 +65,13 @@ export class UserPermissionStore implements IUserPermissionStore {
       // actions
       fetchUserWorkspaceInfo: action,
       // leaveWorkspace: action,
-      // fetchUserProjectInfo: action,
-      // fetchUserProjectPermissions: action,
+      fetchUserProjectInfo: action,
+      fetchUserProjectPermissions: action,
       // joinProject: action,
       // leaveProject: action,
     });
+
+    this.projectMemberService = projectMemberService;
   }
   allowPermissions = (
     allowPermissions: TUserPermissions[],
@@ -102,6 +106,12 @@ export class UserPermissionStore implements IUserPermissionStore {
     return false;
   };
 
+  /**
+   * @description Returns the current project permissions
+   * @param { string } workspaceSlug
+   * @param { string } projectId
+   * @returns { IUserProjectsRole | undefined }
+   */
   projectPermissionsByWorkspaceSlugAndProjectId = computedFn(
     (workspaceSlug: string, projectId: string): TUserPermissions | undefined => {
       if (!workspaceSlug || !projectId) return undefined;
@@ -130,6 +140,42 @@ export class UserPermissionStore implements IUserPermissionStore {
       console.error("Error fetching user workspace information", error);
 
       this.loader = false;
+      throw error;
+    }
+  };
+
+  fetchUserProjectPermissions = async (workspaceSlug: string): Promise<IUserProjectsRole | undefined> => {
+    try {
+      const response = await workspaceService.getWorkspaceUserProjectsRole(workspaceSlug);
+
+      runInAction(() => {
+        set(this.workspaceProjectsPermissions, [workspaceSlug], response);
+      });
+      return response;
+    } catch (error) {
+      console.error("Error fetching user project permissions", error);
+      throw error;
+    }
+  };
+
+  /**
+   * @description Fetches the user's project information
+   * @param { string } workspaceSlug
+   * @param { string } projectId
+   * @returns { Promise<void | undefined> }
+   */
+  fetchUserProjectInfo = async (workspaceSlug: string, projectId: string): Promise<IProjectMember | undefined> => {
+    try {
+      const response = await this.projectMemberService.projectMemberMe(workspaceSlug, projectId);
+      if (response) {
+        runInAction(() => {
+          set(this.projectUserInfo, [workspaceSlug, projectId], response);
+          set(this.workspaceProjectsPermissions, [workspaceSlug, projectId], response.role);
+        });
+      }
+      return response;
+    } catch (error) {
+      console.error("Error fetching user project information", error);
       throw error;
     }
   };

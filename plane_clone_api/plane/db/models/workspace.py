@@ -3,6 +3,8 @@ from plane.db.models import BaseModel
 from django.db import models
 from django.core.exceptions import ValidationError
 from .asset import FileAsset
+# Python imports
+import pytz
 
 ROLE_CHOICES = (
     (20, "Owner"),
@@ -79,6 +81,8 @@ def get_issue_props():
 
 
 class Workspace(BaseModel):
+    TIMEZONE_CHOICES = tuple(zip(pytz.all_timezones, pytz.all_timezones))
+
     name = models.CharField(max_length=80, verbose_name="Workspace Name")
     logo = models.URLField(verbose_name="Logo", blank=True, null=True)
     logo_asset = models.ForeignKey(
@@ -103,6 +107,9 @@ class Workspace(BaseModel):
         ],
     )
     organization_size = models.CharField(max_length=20, blank=True, null=True)
+    timezone = models.CharField(
+        max_length=255, default="UTC", choices=TIMEZONE_CHOICES
+    )
 
     def __str__(self):
         return self.name

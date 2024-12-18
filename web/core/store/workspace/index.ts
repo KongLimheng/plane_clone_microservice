@@ -14,14 +14,14 @@ export interface IWorkspaceRootStore {
   currentWorkspace: IWorkspace | null;
   workspacesCreatedByCurrentUser: IWorkspace[] | null;
   // computed actions
-  // getWorkspaceBySlug: (workspaceSlug: string) => IWorkspace | null;
+  getWorkspaceBySlug: (workspaceSlug: string) => IWorkspace | null;
   // getWorkspaceById: (workspaceId: string) => IWorkspace | null;
   // fetch actions
   fetchWorkspaces: () => Promise<IWorkspace[]>;
   // crud actions
   createWorkspace: (data: Partial<IWorkspace>) => Promise<IWorkspace>;
-  // updateWorkspace: (workspaceSlug: string, data: Partial<IWorkspace>) => Promise<IWorkspace>;
-  // updateWorkspaceLogo: (workspaceSlug: string, logoURL: string) => void;
+  updateWorkspace: (workspaceSlug: string, data: Partial<IWorkspace>) => Promise<IWorkspace>;
+  updateWorkspaceLogo: (workspaceSlug: string, logoURL: string) => void;
   // deleteWorkspace: (workspaceSlug: string) => Promise<void>;
   // sub-stores
   webhook: IWebhookStore;
@@ -50,13 +50,13 @@ export class WorkspaceRootStore implements IWorkspaceRootStore {
       currentWorkspace: computed,
       workspacesCreatedByCurrentUser: computed,
       // computed actions
-      // getWorkspaceBySlug: action,
+      getWorkspaceBySlug: action,
       // getWorkspaceById: action,
       // actions
       fetchWorkspaces: action,
       createWorkspace: action,
-      // updateWorkspace: action,
-      // updateWorkspaceLogo: action,
+      updateWorkspace: action,
+      updateWorkspaceLogo: action,
       // deleteWorkspace: action,
     });
 
@@ -91,6 +91,13 @@ export class WorkspaceRootStore implements IWorkspaceRootStore {
     return userWorkspaces || null;
   }
 
+  /**
+   * get workspace info from the array of workspaces in the store using workspace slug
+   * @param workspaceSlug
+   */
+  getWorkspaceBySlug = (workspaceSlug: string) =>
+    Object.values(this.workspaces ?? {})?.find((w) => w.slug == workspaceSlug) || null;
+
   fetchWorkspaces = async () => {
     this.loader = true;
     try {
@@ -113,6 +120,34 @@ export class WorkspaceRootStore implements IWorkspaceRootStore {
     await this.workspaceService.createWorkspace(data).then((response) => {
       runInAction(() => {
         this.workspaces = set(this.workspaces, response.id, response);
+      });
+      return response;
+    });
+
+  /**
+   * update workspace using the workspace slug and new workspace data
+   * @param {string} workspaceSlug
+   * @param {string} logoURL
+   */
+  updateWorkspaceLogo = async (workspaceSlug: string, logoURL: string) => {
+    const workspaceId = this.getWorkspaceBySlug(workspaceSlug)?.id;
+    if (!workspaceId) {
+      throw new Error("Workspace not found");
+    }
+    runInAction(() => {
+      set(this.workspaces[workspaceId], ["logo_url"], logoURL);
+    });
+  };
+
+  /**
+   * update workspace using the workspace slug and new workspace data
+   * @param workspaceSlug
+   * @param data
+   */
+  updateWorkspace = async (workspaceSlug: string, data: Partial<IWorkspace>) =>
+    await this.workspaceService.updateWorkspace(workspaceSlug, data).then((response) => {
+      runInAction(() => {
+        set(this.workspaces, response.id, response);
       });
       return response;
     });

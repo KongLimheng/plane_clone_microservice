@@ -176,15 +176,20 @@ class Profile(TimeAuditModel):
 
 
 class Account(TimeAuditModel):
+    PROVIDER_CHOICES = (
+        ("google", "Google"),
+        ("github", "Github"),
+        ("gitlab", "GitLab"),
+    )
     id = models.UUIDField(default=uuid.uuid4, unique=True,
                           editable=False, db_index=True, primary_key=True)
 
     user = models.ForeignKey(
-        "db.User", on_delete=models.CASCADE, related_name="accounts"
+        User, on_delete=models.CASCADE, related_name="accounts"
     )
     provider_account_id = models.CharField(max_length=255)
     provider = models.CharField(
-        choices=(("google", "Google"), ("github", "Github")),
+        choices=PROVIDER_CHOICES,
     )
 
     access_token = models.TextField()

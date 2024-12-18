@@ -12,6 +12,8 @@ from plane.license.models import Instance, InstanceAdmin
 from plane.license.utils.instance_value import get_configuration_value
 from plane.settings.common import env
 from plane.utils.cache import cache_response, invalidate_cache
+from django.views.decorators.cache import cache_control
+from django.utils.decorators import method_decorator
 
 
 class InstanceEndpoint(BaseAPIView):
@@ -21,6 +23,7 @@ class InstanceEndpoint(BaseAPIView):
         return [AllowAny()]
 
     @cache_response(user=False)
+    @method_decorator(cache_control(private=True, max_age=12))
     def get(self, req):
         instance = Instance.objects.first()
 
@@ -36,9 +39,11 @@ class InstanceEndpoint(BaseAPIView):
         data["is_activated"] = True
         # Get all the configuration
         (
+            ENABLE_SIGNUP,
             IS_GOOGLE_ENABLED,
             IS_GITHUB_ENABLED,
             GITHUB_APP_NAME,
+            IS_GITLAB_ENABLED,
             EMAIL_HOST,
             ENABLE_MAGIC_LINK_LOGIN,
             ENABLE_EMAIL_PASSWORD,
@@ -47,8 +52,14 @@ class InstanceEndpoint(BaseAPIView):
             POSTHOG_HOST,
             UNSPLASH_ACCESS_KEY,
             OPENAI_API_KEY,
+            IS_INTERCOM_ENABLED,
+            INTERCOM_APP_ID,
         ) = get_configuration_value(
             [
+                {
+                    "key": "ENABLE_SIGNUP",
+                    "default": env("ENABLE_SIGNUP", "0"),
+                },
                 {
                     "key": "IS_GOOGLE_ENABLED",
                     "default": env("IS_GOOGLE_ENABLED", "0"),
@@ -60,6 +71,10 @@ class InstanceEndpoint(BaseAPIView):
                 {
                     "key": "GITHUB_APP_NAME",
                     "default": env("GITHUB_APP_NAME", ""),
+                },
+                {
+                    "key": "IS_GITLAB_ENABLED",
+                    "default": env("IS_GITLAB_ENABLED", "0"),
                 },
                 {
                     "key": "EMAIL_HOST",
@@ -93,13 +108,24 @@ class InstanceEndpoint(BaseAPIView):
                     "key": "OPENAI_API_KEY",
                     "default": env("OPENAI_API_KEY", ""),
                 },
+                # Intercom settings
+                {
+                    "key": "IS_INTERCOM_ENABLED",
+                    "default": env("IS_INTERCOM_ENABLED", "1"),
+                },
+                {
+                    "key": "INTERCOM_APP_ID",
+                    "default": env("INTERCOM_APP_ID", ""),
+                },
             ]
         )
 
         data = {}
         # Authentication
+        data["enable_signup"] = ENABLE_SIGNUP == "1"
         data["is_google_enabled"] = IS_GOOGLE_ENABLED == "1"
         data["is_github_enabled"] = IS_GITHUB_ENABLED == "1"
+        data["is_gitlab_enabled"] = IS_GITLAB_ENABLED == "1"
         data["is_magic_login_enabled"] = ENABLE_MAGIC_LINK_LOGIN == "1"
         data["is_email_password_enabled"] = ENABLE_EMAIL_PASSWORD == "1"
 
@@ -127,10 +153,16 @@ class InstanceEndpoint(BaseAPIView):
         # is smtp configured
         data["is_smtp_configured"] = bool(EMAIL_HOST)
 
+        # Intercom settings
+        data["is_intercom_enabled"] = IS_INTERCOM_ENABLED == "1"
+        data["intercom_app_id"] = INTERCOM_APP_ID
+
         # Base URL
         data["admin_base_url"] = settings.ADMIN_BASE_URL
         data["space_base_url"] = settings.SPACE_BASE_URL
         data["app_base_url"] = settings.APP_BASE_URL
+
+        data["instance_changelog_url"] = settings.INSTANCE_CHANGELOG_URL
 
         instance_data = serializer.data
         instance_data["workspaces_exist"] = Workspace.objects.count() >= 1

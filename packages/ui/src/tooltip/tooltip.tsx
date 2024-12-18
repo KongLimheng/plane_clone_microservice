@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Tooltip2 } from "@blueprintjs/popover2";
 // helpers
-import { cn } from "../helpers";
+import { cn } from "../../helpers";
 
 export type TPosition =
   | "top"

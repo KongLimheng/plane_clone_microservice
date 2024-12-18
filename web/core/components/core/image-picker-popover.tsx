@@ -6,6 +6,7 @@ import { Control } from "react-hook-form";
 import useSWR from "swr";
 import { Popover, Tab } from "@headlessui/react";
 import { useOutsideClickDetector } from "@plane/helpers";
+import { EFileAssetType } from "@plane/types/src/enums";
 import { Button, Loader } from "@plane/ui";
 import { MAX_STATIC_FILE_SIZE } from "@/constants/common";
 import { cn } from "@/helpers/common.helper";
@@ -85,7 +86,33 @@ export const ImagePickerPopover: React.FC<Props> = observer(
       maxSize: MAX_STATIC_FILE_SIZE,
     });
 
-    const handleSubmit = async () => {};
+    const handleSubmit = async () => {
+      if (!image) return;
+      setIsImageUploading(true);
+
+      const uploadCallback = (url: string) => {
+        onChange(url);
+        setIsImageUploading(false);
+        setImage(null);
+        setIsOpen(false);
+      };
+
+      if (isProfileCover) {
+      } else {
+        if (!workspaceSlug) return;
+        await fileService
+          .uploadWorkspaceAsset(
+            workspaceSlug,
+            {
+              entity_identifier: projectId?.toString() ?? "",
+              entity_type: EFileAssetType.PROJECT_COVER,
+            },
+            image
+          )
+          .then((res) => uploadCallback(res.asset_url));
+      }
+    };
+
     useEffect(() => {
       if (!unsplashImages || value !== null) return;
 

@@ -1,9 +1,11 @@
-from plane.db.models import Dashboard, Widget, DashboardWidget
-from plane.app.serializers import DashboardSerializer, WidgetSerializer
+from plane.db.models import Dashboard, Widget, DashboardWidget, Issue, WorkspaceMember, FileAsset, IssueRelation, IssueLink, CycleIssue
+from plane.app.serializers import DashboardSerializer, WidgetSerializer, IssueSerializer
 from ..base import BaseAPIView
+from django.db.models.functions import Coalesce
+from django.contrib.postgres.aggregates import ArrayAgg
+from django.contrib.postgres.fields import ArrayField
 from django.db.models import (
     Case,
-    CharField,
     Count,
     Exists,
     F,
@@ -12,18 +14,370 @@ from django.db.models import (
     JSONField,
     OuterRef,
     Prefetch,
+    CharField,
     Q,
-    Subquery,
     UUIDField,
+    Subquery,
     Value,
     When,
 )
+from django.utils import timezone
+
 from rest_framework.response import Response
 from rest_framework import status
+from plane.utils.issue_filters import issue_filters
+
+
+def dashboard_overview_stats(self, request, slug):
+    assigned_issues = (
+        Issue.issue_objects.filter(
+            project__project_projectmember__is_active=True,
+            project__project_projectmember__member=request.user,
+            workspace__slug=slug,
+            assignees__in=[request.user],
+        )
+        .filter(
+            Q(
+                project__project_projectmember__role=5,
+                project__guest_view_all_features=True,
+            )
+            | Q(
+                project__project_projectmember__role=5,
+                project__guest_view_all_features=False,
+                created_by=self.request.user,
+            )
+            |
+            # For other roles (role < 5), show all issues
+            Q(project__project_projectmember__role__gt=5),
+            project__project_projectmember__member=self.request.user,
+            project__project_projectmember__is_active=True,
+        )
+        .count()
+    )
+
+    pending_issues_count = (
+        Issue.issue_objects.filter(
+            ~Q(state__group__in=["completed", "cancelled"]),
+            target_date__lt=timezone.now().date(),
+            project__project_projectmember__is_active=True,
+            project__project_projectmember__member=request.user,
+            workspace__slug=slug,
+            assignees__in=[request.user],
+        )
+        .filter(
+            Q(
+                project__project_projectmember__role=5,
+                project__guest_view_all_features=True,
+            )
+            | Q(
+                project__project_projectmember__role=5,
+                project__guest_view_all_features=False,
+                created_by=self.request.user,
+            )
+            |
+            # For other roles (role < 5), show all issues
+            Q(project__project_projectmember__role__gt=5),
+            project__project_projectmember__member=self.request.user,
+            project__project_projectmember__is_active=True,
+        )
+        .count()
+    )
+
+    created_issues_count = (
+        Issue.issue_objects.filter(
+            workspace__slug=slug,
+            project__project_projectmember__is_active=True,
+            project__project_projectmember__member=request.user,
+            created_by_id=request.user.id,
+        )
+        .filter(
+            Q(
+                project__project_projectmember__role=5,
+                project__guest_view_all_features=True,
+            )
+            | Q(
+                project__project_projectmember__role=5,
+                project__guest_view_all_features=False,
+                created_by=self.request.user,
+            )
+            |
+            # For other roles (role < 5), show all issues
+            Q(project__project_projectmember__role__gt=5),
+            project__project_projectmember__member=self.request.user,
+            project__project_projectmember__is_active=True,
+        )
+        .count()
+    )
+
+    completed_issues_count = (
+        Issue.issue_objects.filter(
+            workspace__slug=slug,
+            project__project_projectmember__is_active=True,
+            project__project_projectmember__member=request.user,
+            assignees__in=[request.user],
+            state__group="completed",
+        )
+        .filter(
+            Q(
+                project__project_projectmember__role=5,
+                project__guest_view_all_features=True,
+            )
+            | Q(
+                project__project_projectmember__role=5,
+                project__guest_view_all_features=False,
+                created_by=self.request.user,
+            )
+            |
+            # For other roles (role < 5), show all issues
+            Q(project__project_projectmember__role__gt=5),
+            project__project_projectmember__member=self.request.user,
+            project__project_projectmember__is_active=True,
+        )
+        .count()
+    )
+
+    return Response(
+        {
+            "assigned_issues_count": assigned_issues,
+            "pending_issues_count": pending_issues_count,
+            "completed_issues_count": completed_issues_count,
+            "created_issues_count": created_issues_count,
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+def dashboard_assigned_issues(self, request, slug):
+    filters = issue_filters(request.query_params, "GET")
+    issue_type = request.GET.get("issue_type", None)
+    # get all the assigned issues
+    assigned_issue = (
+        Issue.issue_objects.filter(
+            workspace__slug=slug,
+            project__project_projectmember__member=request.user,
+            project__project_projectmember__is_active=True,
+            assignees__in=[request.user],
+        )
+        .filter(**filters)
+        .select_related("workspace", "project", "state", "parent")
+        .prefetch_related("assignees", "labels", "issue_module__module")
+        .prefetch_related(
+            Prefetch(
+                "issue_relation",
+                queryset=IssueRelation.objects.select_related(
+                    "related_issue"
+                ).select_related("issue"),
+            )
+        )
+        .annotate(
+            cycle_id=Subquery(
+                CycleIssue.objects.filter(
+                    issue=OuterRef("id"), deleted_at__isnull=True
+                ).values("cycle_id")[:1]
+            )
+        )
+        .annotate(
+            link_count=IssueLink.objects.filter(issue=OuterRef("id"))
+            .order_by()
+            .annotate(count=Func(F("id"), function="Count"))
+            .values("count")
+        )
+        .annotate(
+            attachment_count=FileAsset.objects.filter(
+                issue_id=OuterRef("id"),
+                entity_type=FileAsset.EntityTypeContext.ISSUE_ATTACHMENT,
+            )
+            .order_by()
+            .annotate(count=Func(F("id"), function="Count"))
+            .values("count")
+        )
+        .annotate(
+            sub_issues_count=Issue.issue_objects.filter(parent=OuterRef('id'))
+            .order_by()
+            .annotate(count=Func(F('id'), function="Count"))
+            .values('count')
+        )
+        .annotate(
+            label_ids=Coalesce(
+                ArrayAgg(
+                    "labels__id",
+                    distinct=True,
+                    filter=Q(
+                        ~Q(labels__id__isnull=True)
+                        & Q(label_issue__deleted_at__isnull=True),
+                    )
+                ),
+                Value([], output_field=ArrayField(UUIDField()))
+            ),
+            assignee_ids=Coalesce(
+                ArrayAgg(
+                    "assignees__id",
+                    distinct=True,
+                    filter=Q(
+                        ~Q(assignees__id__isnull=True)
+                        & Q(assignees__member_project__is_active=True)
+                        & Q(issue_assignee__deleted_at__isnull=True)
+                    ),
+                ),
+                Value([], output_field=ArrayField(UUIDField())),
+            ),
+            module_ids=Coalesce(
+                ArrayAgg(
+                    "issue_module__module_id",
+                    distinct=True,
+                    filter=Q(
+                        ~Q(issue_module__module_id__isnull=True)
+                        & Q(issue_module__module__archived_at__isnull=True)
+                        & Q(issue_module__deleted_at__isnull=True)
+                    ),
+                ),
+                Value([], output_field=ArrayField(UUIDField())),
+            )
+        )
+
+    )
+
+    if WorkspaceMember.objects.filter(
+        workspace__slug=slug,
+        member=request.user,
+        role=5,
+        is_active=True
+    ).exists():
+        assigned_issue = assigned_issue.filter(created_by=request.user)
+
+    # Priority Ordering
+    priority_order = ["urgent", "high", "medium", "low", "none"]
+    assigned_issue = assigned_issue.annotate(
+        priority_order=Case(
+            *[
+                When(priority=p, then=Value(i))
+                for i, p in enumerate(priority_order)
+            ],
+            output_field=CharField(),
+        )
+    ).order_by("priority_order")
+
+    if issue_type == 'pending':
+        pending_issues_count = assigned_issue.filter(
+            state__group__in=["backlog", "started", "unstarted"]
+        ).count()
+
+        pending_issues = assigned_issue.filter(
+            state__group__in=["backlog", "started", "unstarted"]
+        )[:5]
+
+        return Response(
+            {
+                "issues": IssueSerializer(
+                    pending_issues, many=True, expand=self.expand
+                ).data,
+                "count": pending_issues_count,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    if issue_type == 'upcoming':
+        upcoming_issues_count = assigned_issue.filter(
+            state__group__in=["backlog", "unstarted", "started"],
+            target_date__gte=timezone.now(),
+        ).count()
+
+        upcoming_issues = assigned_issue.filter(
+            state__group__in=["backlog", "unstarted", "started"],
+            target_date__gte=timezone.now(),
+        )[:5]
+
+        return Response(
+            {
+                "issues": IssueSerializer(
+                    upcoming_issues, many=True, expand=self.expand
+                ).data,
+                "count": upcoming_issues_count,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    if issue_type == "overdue":
+        overdue_issues_count = assigned_issue.filter(
+            state__group__in=["backlog", "unstarted", "started"],
+            target_date__lt=timezone.now(),
+        ).count()
+        overdue_issues = assigned_issue.filter(
+            state__group__in=["backlog", "unstarted", "started"],
+            target_date__lt=timezone.now(),
+        )[:5]
+        return Response(
+            {
+                "issues": IssueSerializer(
+                    overdue_issues, many=True, expand=self.expand
+                ).data,
+                "count": overdue_issues_count,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    if issue_type == "completed":
+        completed_issues_count = assigned_issue.filter(
+            state__group__in=["completed"]
+        ).count()
+        completed_issues = assigned_issue.filter(
+            state__group__in=["completed"]
+        )[:5]
+        return Response(
+            {
+                "issues": IssueSerializer(
+                    completed_issues, many=True, expand=self.expand
+                ).data,
+                "count": completed_issues_count,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    return Response(
+        {"error": "Please specify a valid issue type"},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
+def dashboard_recent_collaborators(self, request, slug):
+    project_members_with_activities = (
+        WorkspaceMember.objects.filter(
+            workspace__slug=slug,
+            is_active=True,
+        )
+        .annotate(
+            active_issue_count=Count(
+                Case(
+                    When(
+                        member__issue_assignee__issue__state__group__in=[
+                            "unstarted",
+                            "started",
+                        ],
+                        member__issue_assignee__issue__workspace__slug=slug,
+                        member__issue_assignee__issue__project__project_projectmember__member=request.user,
+                        member__issue_assignee__issue__project__project_projectmember__is_active=True,
+                        then=F("member__issue_assignee__issue__id"),
+                    ),
+                    distinct=True,
+                    output_field=IntegerField(),
+                ),
+                distinct=True,
+            ),
+            user_id=F("member_id"),
+        )
+        .values("user_id", "active_issue_count")
+        .order_by("-active_issue_count")
+        .distinct()
+    )
+    return Response(
+        (project_members_with_activities),
+        status=status.HTTP_200_OK,
+    )
 
 
 class DashboardEndpoint(BaseAPIView):
     def get(self, req, slug, dashboard_id=None):
+
         if not dashboard_id:
             dashboard_type = req.GET.get("dashboard_type", None)
             if dashboard_type == "home":
@@ -90,7 +444,7 @@ class DashboardEndpoint(BaseAPIView):
                 return Response(
                     {
                         "dashboard": DashboardSerializer(dashboard).data,
-                        "widget": WidgetSerializer(widgets, many=True).data
+                        "widgets": WidgetSerializer(widgets, many=True).data
                     }, status=status.HTTP_200_OK
                 )
 
@@ -98,3 +452,54 @@ class DashboardEndpoint(BaseAPIView):
                 {"error": "Please specify a valid dashboard type"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        widget_key = req.GET.get("widget_key", "overview_stats")
+        WIDGETS_MAPPER = {
+            "overview_stats": dashboard_overview_stats,
+            "assigned_issues": dashboard_assigned_issues,
+            # "created_issues": dashboard_created_issues,
+            # "issues_by_state_groups": dashboard_issues_by_state_groups,
+            # "issues_by_priority": dashboard_issues_by_priority,
+            # "recent_activity": dashboard_recent_activity,
+            # "recent_projects": dashboard_recent_projects,
+            "recent_collaborators": dashboard_recent_collaborators,
+        }
+
+        func = WIDGETS_MAPPER.get(widget_key)
+        if func is not None:
+            res = func(
+                self,
+                request=req,
+                slug=slug
+            )
+            if isinstance(res, Response):
+                return res
+
+        return Response(
+            {"error": "Please specify a valid widget key"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class WidgetsEndpoint(BaseAPIView):
+    def patch(self, req, dashboard_id, widget_id):
+        dashboard_widget = DashboardWidget.objects.filter(
+            widget_id=widget_id,
+            dashboard_id=dashboard_id
+        ).first()
+
+        dashboard_widget.is_visible = req.data.get(
+            "is_visible", dashboard_widget.is_visible
+        )
+
+        dashboard_widget.sort_order = req.data.get(
+            "sort_order", dashboard_widget.sort_order
+        )
+        dashboard_widget.filters = req.data.get(
+            "filters", dashboard_widget.filters
+        )
+
+        dashboard_widget.save()
+        return Response(
+            {"message": "successfully updated"}, status=status.HTTP_200_OK
+        )

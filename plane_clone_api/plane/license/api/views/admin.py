@@ -25,7 +25,6 @@ from rest_framework.response import Response
 
 
 class InstanceAdminEndpoint(BaseAPIView):
-
     # Create an instance admin
     @invalidate_cache(path="/api/instances/", user=False)
     def post(self, request: HttpRequest):
@@ -76,7 +75,6 @@ class InstanceAdminSignUpEndpoint(View):
     @invalidate_cache(path="/api/instances/", user=False)
     def post(self, request: HttpRequest):
         # Check instance first
-
         instance = Instance.objects.first()
         if instance is None:
             exc = AuthenticationException(
@@ -133,6 +131,7 @@ class InstanceAdminSignUpEndpoint(View):
 
         # Validate the email
         email = email.strip().lower()
+
         try:
             validate_email(email)
         except ValidationError:
@@ -191,8 +190,8 @@ class InstanceAdminSignUpEndpoint(View):
                     base_host(request=request, is_admin=True),
                     "?" + urlencode(exc.get_error_dict()),
                 )
-                return HttpResponse(exc.get_error_dict())
-                # return HttpResponseRedirect(url)
+                # return HttpResponse(exc.get_error_dict())
+                return HttpResponseRedirect(url)
 
             user = User.objects.create(
                 first_name=first_name,
@@ -250,8 +249,8 @@ class InstanceAdminSignInEndpoint(View):
             return HttpResponseRedirect(url)
             # return HttpResponse(url)
           # Get email and password
-        email = request.POST.get("email", False)
-        password = request.POST.get("password", False)
+        email = request.POST.get("email", '')
+        password = request.POST.get("password", '')
 
         # return error if the email and password is not present
         if not email or not password:
@@ -290,20 +289,6 @@ class InstanceAdminSignInEndpoint(View):
 
         # Fetch the user
         user = User.objects.filter(email=email).first()
-        # is_active
-        if not user.is_active:
-            exc = AuthenticationException(
-                error_code=ADMIN_USER_DEACTIVATED,
-                error_message="ADMIN_USER_DEACTIVATED",
-            )
-            url = urljoin(
-                base_host(request=request, is_admin=True),
-                "?" + urlencode(exc.get_error_dict()),
-            )
-            # return HttpResponse(url)
-
-            return HttpResponseRedirect(url)
-
         # Error out if the user is not present
         if not user:
             exc = AuthenticationException(
@@ -312,6 +297,18 @@ class InstanceAdminSignInEndpoint(View):
                 payload={
                     "email": email,
                 },
+            )
+            url = urljoin(
+                base_host(request=request, is_admin=True),
+                "?" + urlencode(exc.get_error_dict()),
+            )
+            return HttpResponseRedirect(url)
+
+        # is_active
+        if not user.is_active:
+            exc = AuthenticationException(
+                error_code=ADMIN_USER_DEACTIVATED,
+                error_message="ADMIN_USER_DEACTIVATED",
             )
             url = urljoin(
                 base_host(request=request, is_admin=True),
@@ -350,7 +347,6 @@ class InstanceAdminSignInEndpoint(View):
                 "?" + urlencode(exc.get_error_dict()),
             )
             return HttpResponseRedirect(url)
-            # return HttpResponse(url)
 
         # settings last active for the user
         user.is_active = True

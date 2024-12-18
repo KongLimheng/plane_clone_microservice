@@ -46,12 +46,25 @@ class DynamicBaseSerializer(BaseSerializer):
         for field in allowed:
             from . import (
                 WorkspaceLiteSerializer,
-                UserLiteSerializer
+                UserLiteSerializer,
+                ProjectLiteSerializer,
+                StateLiteSerializer,
+                IssueSerializer
             )
             # Expansion mapper
             expansion = {
                 "user": UserLiteSerializer,
                 "workspace": WorkspaceLiteSerializer,
+                "project": ProjectLiteSerializer,
+                "default_assignee": UserLiteSerializer,
+                "project_lead": UserLiteSerializer,
+                "state": StateLiteSerializer,
+                "created_by": UserLiteSerializer,
+                "issue": IssueSerializer,
+                "actor": UserLiteSerializer,
+                "owned_by": UserLiteSerializer,
+                "members": UserLiteSerializer,
+                "assignees": UserLiteSerializer,
             }
 
             if field not in self.fields and field in expansion:
@@ -75,20 +88,33 @@ class DynamicBaseSerializer(BaseSerializer):
     def to_representation(self, instance):
         res = super().to_representation(instance)
 
+        # Ensure 'expand' is iterable before processing
         if self.expand:
             for expand in self.expand:
                 if expand in self.fields:
+                    # Import all the expandable serializers
                     from . import (
                         WorkspaceLiteSerializer,
                         UserLiteSerializer,
-                        IssueAttachmentLiteSerializer
+                        IssueAttachmentLiteSerializer,
+                        ProjectLiteSerializer,
+                        StateLiteSerializer,
+                        IssueSerializer
                     )
                     # Expansion mapper
                     expansion = {
                         "user": UserLiteSerializer,
                         "workspace": WorkspaceLiteSerializer,
-                        "issue_attachment": IssueAttachmentLiteSerializer,
-
+                        "project": ProjectLiteSerializer,
+                        "default_assignee": UserLiteSerializer,
+                        "project_lead": UserLiteSerializer,
+                        "state": StateLiteSerializer,
+                        "created_by": UserLiteSerializer,
+                        "issue": IssueSerializer,
+                        "actor": UserLiteSerializer,
+                        "owned_by": UserLiteSerializer,
+                        "members": UserLiteSerializer,
+                        "assignees": UserLiteSerializer,
                     }
                     if expand in expansion:
                         if isinstance(res.get(expand), list):
@@ -99,11 +125,16 @@ class DynamicBaseSerializer(BaseSerializer):
                             exp_serializer = expansion[expand](
                                 getattr(instance, expand)
                             )
+                        res[expand] = exp_serializer.data
                     else:
+                        # You might need to handle this case differently
                         res[expand] = getattr(
                             instance, f"{expand}_id", None
                         )
+
+            # Check if issue_attachments is in fields or expand
             if ("issue_attachments" in self.fields or "issue_attachments" in self.expand):
+                # Import the model here to avoid circular imports
                 from plane.db.models import FileAsset
                 issue_id = getattr(instance, "id", None)
                 if issue_id:
@@ -118,4 +149,6 @@ class DynamicBaseSerializer(BaseSerializer):
                             issue_attachments, many=True
                         ).data
                     )
+                else:
+                    res["issue_attachments"] = []
         return res

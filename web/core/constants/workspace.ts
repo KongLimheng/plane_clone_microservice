@@ -1,4 +1,10 @@
 import { EUserPermissions } from "@/plane-web/constants/user-permissions";
+// services images
+import CSVLogo from "@/public/services/csv.svg";
+import ExcelLogo from "@/public/services/excel.svg";
+import GithubLogo from "@/public/services/github.png";
+import JiraLogo from "@/public/services/jira.svg";
+import JSONLogo from "@/public/services/json.svg";
 
 export const ROLE = {
   [EUserPermissions.GUEST]: "Guest",
@@ -49,4 +55,28 @@ export const USER_ROLES = [
   { value: "Student / Professor", label: "Student / Professor" },
   { value: "Human Resources", label: "Human Resources" },
   { value: "Other", label: "Other" },
+];
+
+export const EXPORTERS_LIST = [
+  {
+    provider: "csv",
+    type: "export",
+    title: "CSV",
+    description: "Export issues to a CSV file.",
+    logo: CSVLogo,
+  },
+  {
+    provider: "xlsx",
+    type: "export",
+    title: "Excel",
+    description: "Export issues to a Excel file.",
+    logo: ExcelLogo,
+  },
+  {
+    provider: "json",
+    type: "export",
+    title: "JSON",
+    description: "Export issues to a JSON file.",
+    logo: JSONLogo,
+  },
 ];

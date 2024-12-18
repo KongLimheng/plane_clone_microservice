@@ -1,7 +1,7 @@
 import * as React from "react";
 import { EHeaderVariant, getHeaderStyle, THeaderVariant } from "./helper";
 import { ERowVariant, Row } from "../row";
-import { cn } from "../helpers";
+import { cn } from "../../helpers";
 
 export interface HeaderProps {
   variant?: THeaderVariant;

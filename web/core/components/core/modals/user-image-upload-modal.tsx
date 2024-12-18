@@ -5,7 +5,8 @@ import { observer } from "mobx-react";
 import { useDropzone } from "react-dropzone";
 import { UserCircle2 } from "lucide-react";
 import { Dialog, Transition } from "@headlessui/react";
-import { Button } from "@plane/ui";
+import { EFileAssetType } from "@plane/types/src/enums";
+import { Button, setToast, TOAST_TYPE } from "@plane/ui";
 import { MAX_STATIC_FILE_SIZE } from "@/constants/common";
 import { cn } from "@/helpers/common.helper";
 import { getAssetIdFromUrl, getFileURL } from "@/helpers/file.helper";
@@ -46,8 +47,27 @@ export const UserImageUploadModal = observer(({ isOpen, handleRemove, onClose, o
     setIsImageUploading(true);
 
     try {
-      // const {asset_url} = await fileService.up
-    } catch (error) {}
+      const { asset_url } = await fileService.uploadUserAsset(
+        {
+          entity_identifier: "",
+          entity_type: EFileAssetType.USER_AVATAR,
+        },
+        image
+      );
+
+      console.log(value, "==");
+      onSuccess(asset_url);
+      setImage(null);
+    } catch (error) {
+      setToast({
+        type: TOAST_TYPE.ERROR,
+        title: "Error!",
+        message: error?.toString() ?? "Something went wrong. Please try again.",
+      });
+      throw new Error("Error in uploading file.");
+    } finally {
+      setIsImageUploading(false);
+    }
   };
 
   const handleImageRemove = async () => {

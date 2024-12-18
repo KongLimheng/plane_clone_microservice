@@ -3,6 +3,8 @@ from plane.authentication.adapter.error import AUTHENTICATION_ERROR_CODES, Authe
 from plane.db.models.user import Account
 from .base import Adapter
 from django.utils import timezone
+from django.db import DatabaseError, IntegrityError
+from plane.utils.exception_logger import log_exception
 
 
 class OauthAdapter(Adapter):
@@ -72,20 +74,46 @@ class OauthAdapter(Adapter):
             )
 
     def create_update_account(self, user):
-        account, create = Account.objects.update_or_create(
-            user=user,
-            provider=self.provider,
-            provider_account_id=self.user_data.get("user").get("provider_id"),
-            defaults={
-                "access_token": self.token_data.get("access_token"),
-                "refresh_token": self.token_data.get("refresh_token", None),
-                "access_token_expired_at": self.token_data.get(
+        try:
+            # Check if the account already exists
+            account = Account.objects.filter(
+                user=user,
+                provider=self.provider,
+                provider_account_id=self.user_data.get(
+                    "user").get("provider_id")
+
+            ).first()
+            if account:
+                account.access_token = self.token_data.get("access_token")
+                account.refresh_token = self.token_data.get(
+                    "refresh_token", None
+                )
+                account.access_token_expired_at = self.token_data.get(
                     "access_token_expired_at"
-                ),
-                "refresh_token_expired_at": self.token_data.get(
+                )
+                account.refresh_token_expired_at = self.token_data.get(
                     "refresh_token_expired_at"
-                ),
-                "last_connected_at": timezone.now(),
-                "id_token": self.token_data.get("id_token", ""),
-            },
-        )
+                )
+                account.last_connected_at = timezone.now()
+                account.id_token = self.token_data.get("id_token", "")
+                account.save()
+            else:
+                Account.objects.create(
+                    user=user,
+                    provider=self.provider,
+                    provider_account_id=self.user_data.get("user", {}).get(
+                        "provider_id"
+                    ),
+                    access_token=self.token_data.get("access_token"),
+                    refresh_token=self.token_data.get("refresh_token", None),
+                    access_token_expired_at=self.token_data.get(
+                        "access_token_expired_at"
+                    ),
+                    refresh_token_expired_at=self.token_data.get(
+                        "refresh_token_expired_at"
+                    ),
+                    last_connected_at=timezone.now(),
+                    id_token=self.token_data.get("id_token", ""),
+                )
+        except (DatabaseError, IntegrityError)as e:
+            log_exception(e)

@@ -1,4 +1,4 @@
-from plane.app.serializers.base import BaseSerializer, DynamicBaseSerializer
+from plane.app.serializers import BaseSerializer, DynamicBaseSerializer, UserAdminLiteSerializer
 from plane.db.models import Workspace, WorkspaceMemberInvite, WorkspaceMember
 from plane.app.serializers import UserLiteSerializer
 from rest_framework import serializers
@@ -63,6 +63,24 @@ class WorkSpaceMemberInviteSerializer(BaseSerializer):
 
 class WorkspaceMemberMeSerializer(BaseSerializer):
     draft_issue_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = WorkspaceMember
+        fields = "__all__"
+
+
+class WorkspaceMemberAdminSerializer(DynamicBaseSerializer):
+    member = UserAdminLiteSerializer(read_only=True)
+    workspace = WorkspaceLiteSerializer(read_only=True)
+
+    class Meta:
+        model = WorkspaceMember
+        fields = "__all__"
+
+
+class WorkSpaceMemberSerializer(DynamicBaseSerializer):
+    member = UserLiteSerializer(read_only=True)
+    workspace = WorkspaceLiteSerializer(read_only=True)
 
     class Meta:
         model = WorkspaceMember

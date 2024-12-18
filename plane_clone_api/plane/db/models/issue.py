@@ -5,6 +5,10 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from plane.db.mixins import SoftDeletionManager
 from django.conf import settings
 from django.utils import timezone
+from .label import Label
+from django.core.exceptions import ValidationError
+from uuid import uuid4
+from django.contrib.postgres.fields import ArrayField
 
 
 def get_default_properties():
@@ -68,19 +72,28 @@ def get_default_display_properties():
         "updated_on": True,
     }
 
+
+def get_upload_path(instance, filename):
+    return f"{instance.workspace.id}/{uuid4().hex}-{filename}"
+
+
+def file_size(value):
+    # File limit check is only for cloud hosted
+    if value.size > settings.FILE_SIZE_LIMIT:
+        raise ValidationError("File too large. Size should not exceed 5 MB.")
+
+
 # TODO: Handle identifiers for Bulk Inserts - nk
-
-
 class IssueManager(SoftDeletionManager):
     def get_queryset(self):
         return (
             super()
             .get_queryset()
             .filter(
-                models.Q(issue_inbox__status=1)
-                | models.Q(issue_inbox__status=-1)
-                | models.Q(issue_inbox__status=2)
-                | models.Q(issue_inbox__isnull=True)
+                models.Q(issue_intake__status=1)
+                | models.Q(issue_intake__status=-1)
+                | models.Q(issue_intake__status=2)
+                | models.Q(issue_intake__isnull=True)
             )
             .filter(deleted_at__isnull=True)
             .filter(state__is_triage=False)
@@ -248,51 +261,6 @@ class Issue(ProjectBaseModel):
         return f"{self.name} <{self.project.name}>"
 
 
-class Label(ProjectBaseModel):
-    parent = models.ForeignKey(
-        'self',
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name="parent_label"
-    )
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    color = models.CharField(max_length=255, blank=True)
-    sort_order = models.FloatField(default=65535)
-    external_source = models.CharField(max_length=255, null=True, blank=True)
-    external_id = models.CharField(max_length=255, blank=True, null=True)
-
-    class Meta:
-        unique_together = ["name", "project", "deleted_at"]
-        constraints = [
-            models.UniqueConstraint(
-                fields=["name", "project"],
-                condition=models.Q(deleted_at__isnull=True),
-                name="label_unique_name_project_when_deleted_at_null",
-            )
-        ]
-        verbose_name = "Label"
-        verbose_name_plural = "Labels"
-        db_table = "labels"
-        ordering = ("-created_at",)
-
-    def save(self, *args, **kwargs):
-        if self._state.adding:
-            # Get the maximum sequence value from the database
-            last_id = Label.objects.filter(project=self.project).aggregate(
-                largest=models.Max("sort_order")
-            )["largest"]
-            # if last_id is not None
-            if last_id is not None:
-                self.sort_order = last_id + 10000
-
-        super(Label, self).save(*args, **kwargs)
-
-    def __str__(self):
-        return str(self.name)
-
-
 class IssueSequence(ProjectBaseModel):
     issue = models.ForeignKey(
         Issue,
@@ -354,3 +322,177 @@ class IssueLabel(ProjectBaseModel):
 
     def __str__(self):
         return f"{self.issue.name} {self.label.name}"
+
+
+class IssueUserProperty(ProjectBaseModel):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="issue_property_user",
+    )
+    filters = models.JSONField(default=get_default_filters)
+    display_filters = models.JSONField(default=get_default_display_filters)
+    display_properties = models.JSONField(
+        default=get_default_display_properties
+    )
+
+    class Meta:
+        verbose_name = "Issue User Property"
+        verbose_name_plural = "Issue User Properties"
+        db_table = "issue_user_properties"
+        ordering = ("-created_at",)
+        unique_together = ["user", "project", "deleted_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "project"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="issue_user_property_unique_user_project_when_deleted_at_null",
+            )
+        ]
+
+    def __str__(self):
+        """Return properties status of the issue"""
+        return str(self.user)
+
+
+class IssueLink(ProjectBaseModel):
+    title = models.CharField(max_length=255, null=True, blank=True)
+    url = models.TextField()
+    issue = models.ForeignKey(
+        Issue, on_delete=models.CASCADE, related_name="issue_link"
+    )
+    metadata = models.JSONField(default=dict)
+
+    class Meta:
+        verbose_name = "Issue Link"
+        verbose_name_plural = "Issue Links"
+        db_table = "issue_links"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.issue.name} {self.url}"
+
+
+class IssueRelation(ProjectBaseModel):
+    RELATION_CHOICES = (
+        ("duplicate", "Duplicate"),
+        ("relates_to", "Relates To"),
+        ("blocked_by", "Blocked By"),
+        ("start_before", "Start Before"),
+        ("finish_before", "Finish Before"),
+    )
+
+    issue = models.ForeignKey(
+        Issue, related_name="issue_relation", on_delete=models.CASCADE
+    )
+    related_issue = models.ForeignKey(
+        Issue, related_name="issue_related", on_delete=models.CASCADE
+    )
+    relation_type = models.CharField(
+        max_length=20,
+        choices=RELATION_CHOICES,
+        verbose_name="Issue Relation Type",
+        default="blocked_by",
+    )
+
+    class Meta:
+        unique_together = ["issue", "related_issue", "deleted_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["issue", "related_issue"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="issue_relation_unique_issue_related_issue_when_deleted_at_null",
+            )
+        ]
+        verbose_name = "Issue Relation"
+        verbose_name_plural = "Issue Relations"
+        db_table = "issue_relations"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.issue.name} {self.related_issue.name}"
+
+
+class IssueActivity(ProjectBaseModel):
+    issue = models.ForeignKey(
+        Issue, on_delete=models.SET_NULL, null=True, related_name="issue_activity"
+    )
+    verb = models.CharField(
+        max_length=255, verbose_name="Action", default="created")
+    field = models.CharField(
+        max_length=255, verbose_name="Field Name", blank=True, null=True
+    )
+    old_value = models.TextField(
+        verbose_name="Old Value", blank=True, null=True)
+    new_value = models.TextField(
+        verbose_name="New Value", blank=True, null=True)
+
+    comment = models.TextField(verbose_name="Comment", blank=True)
+    attachments = ArrayField(models.URLField(), size=10,
+                             blank=True, default=list)
+    issue_comment = models.ForeignKey(
+        "db.IssueComment",
+        on_delete=models.SET_NULL,
+        related_name="issue_comment",
+        null=True,
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="issue_activities",
+    )
+    old_identifier = models.UUIDField(null=True)
+    new_identifier = models.UUIDField(null=True)
+    epoch = models.FloatField(null=True)
+
+    class Meta:
+        verbose_name = "Issue Activity"
+        verbose_name_plural = "Issue Activities"
+        db_table = "issue_activities"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        """Return issue of the comment"""
+        return str(self.issue)
+
+
+class IssueComment(ProjectBaseModel):
+    comment_stripped = models.TextField(verbose_name="Comment", blank=True)
+    comment_json = models.JSONField(blank=True, default=dict)
+    comment_html = models.TextField(blank=True, default="<p></p>")
+    attachments = ArrayField(models.URLField(), size=10,
+                             blank=True, default=list)
+    issue = models.ForeignKey(
+        Issue, on_delete=models.CASCADE, related_name="issue_comments"
+    )
+    # System can also create comment
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="comments",
+        null=True,
+    )
+    access = models.CharField(
+        choices=(("INTERNAL", "INTERNAL"), ("EXTERNAL", "EXTERNAL")),
+        default="INTERNAL",
+        max_length=100,
+    )
+    external_source = models.CharField(max_length=255, null=True, blank=True)
+    external_id = models.CharField(max_length=255, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        self.comment_stripped = (
+            strip_tags(self.comment_html) if self.comment_html != "" else ""
+        )
+        return super(IssueComment, self).save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = "Issue Comment"
+        verbose_name_plural = "Issue Comments"
+        db_table = "issue_comments"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        """Return issue of the comment"""
+        return str(self.issue)

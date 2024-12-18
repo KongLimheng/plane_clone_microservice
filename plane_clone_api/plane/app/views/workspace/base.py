@@ -1,9 +1,8 @@
 from django.db import IntegrityError
-from plane.db.models import Workspace
-from plane.app.views.base import BaseAPIView, BaseViewSet
+from plane.db.models import Workspace, WorkspaceMember, Issue
+from plane.app.views import BaseAPIView, BaseViewSet
 from plane.app.serializers import WorkSpaceSerializer
 from plane.app.permissions import WorkSpaceBasePermission, allow_permission, ROLE
-from plane.db.models import WorkspaceMember
 from django.db.models import OuterRef, Func, F, Prefetch
 from rest_framework.response import Response
 from rest_framework import status
@@ -36,6 +35,13 @@ class WorkSpaceViewSet(BaseViewSet):
             .values("count")
         )
 
+        issue_count = (
+            Issue.issue_objects.filter(workspace=OuterRef("id"))
+            .order_by()
+            .annotate(count=Func(F("id"), function="Count"))
+            .values("count")
+        )
+
         return (
             self.filter_queryset(
                 super().get_queryset().select_related("owner"))
@@ -45,13 +51,10 @@ class WorkSpaceViewSet(BaseViewSet):
                 workspace_member__is_active=True
             )
             .annotate(total_members=member_count)
-            # .annotate(total_issues=issue_count)
+            .annotate(total_issues=issue_count)
             .select_related("owner")
         )
 
-    @invalidate_cache(path="/api/workspaces/", user=False)
-    @invalidate_cache(path="/api/users/me/workspaces/")
-    @invalidate_cache(path="/api/instances/", user=False)
     def create(self, request):
         try:
             serializer = WorkSpaceSerializer(data=request.data)
@@ -101,6 +104,14 @@ class WorkSpaceViewSet(BaseViewSet):
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+    @allow_permission([ROLE.ADMIN], level="WORKSPACE")
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @allow_permission([ROLE.ADMIN], level="WORKSPACE")
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
 
 
 class UserWorkSpacesEndpoint(BaseAPIView):
