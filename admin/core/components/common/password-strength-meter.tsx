@@ -1,7 +1,7 @@
 "use client";
 
 import { FC, useMemo } from "react";
-import { cn } from "@plane/ui";
+import { cn } from "@plane/utils";
 import { E_PASSWORD_STRENGTH, getPasswordStrength } from "@/helpers/password.helper";
 
 type TPasswordStrengthMeter = {

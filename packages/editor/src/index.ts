@@ -10,6 +10,13 @@ export { RichTextEditorWithRef, CollaborativeDocumentEditorWithRef } from "@/com
 // helpers
 export * from "@/helpers/common";
 export * from "@/helpers/editor-commands";
+export * from "@/helpers/yjs";
+
+// components
+export * from "@/components/menus";
+
+// hooks
+export { useEditor } from "@/hooks/use-editor";
 
 // types
 export type { CustomEditorProps } from "@/hooks/use-editor";

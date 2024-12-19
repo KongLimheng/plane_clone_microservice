@@ -1,21 +1,19 @@
+import * as Comlink from "comlink";
 import { set } from "lodash";
 import { TIssue } from "@plane/types";
 import { EIssueGroupBYServerToProperty } from "@/constants/issue";
 import { rootStore } from "@/lib/store-context";
 import { IssueService } from "@/services/issue";
 import { ARRAY_FIELDS, BOOLEAN_FIELDS } from "./utils/constants";
+import { loadWorkSpaceData } from "./utils/load-workspace";
 import { issueFilterCountQueryConstructor, issueFilterQueryConstructor } from "./utils/query-constructor";
 import { runQuery } from "./utils/query-executor";
 import { createTables } from "./utils/tables";
-import { getGroupedIssueResults, getSubGroupedIssueResults, log, logError, logInfo } from "./utils/utils";
-
-declare module "@sqlite.org/sqlite-wasm" {
-  export function sqlite3Worker1Promiser(...args: any): any;
-}
+import { clearOPFS, getGroupedIssueResults, getSubGroupedIssueResults, log, logError, logInfo } from "./utils/utils";
 
 const DB_VERSION = 1;
-const PAGE_SIZE = 1000;
-const BATCH_SIZE = 200;
+const PAGE_SIZE = 500;
+const BATCH_SIZE = 50;
 
 type TProjectStatus = {
   issues: { status: undefined | "loading" | "ready" | "error" | "syncing"; sync: Promise<void> | undefined };
@@ -32,33 +30,46 @@ export class Storage {
 
   constructor() {
     this.db = null;
+    if (typeof window !== undefined) {
+      window.addEventListener("beforeunload", this.closeDBConnection);
+    }
   }
 
   reset = () => {
+    if (this.db) {
+      this.db.close();
+    }
     this.db = null;
     this.status = undefined;
     this.projectStatus = {};
     this.workspaceSlug = "";
   };
 
-  clearStorage = async () => {
+  closeDBConnection = async () => {
+    if (this.db) {
+      await this.db.close();
+    }
+  };
+
+  clearStorage = async (force = false) => {
     try {
-      const storageManager = window.navigator.storage;
-      const fileSystemDirectoryHandle = await storageManager.getDirectory();
-      //@ts-expect-error , clear local issue cache
-      await fileSystemDirectoryHandle.remove({ recursive: true });
-    } catch (error) {
-      console.error("Error clearing sqlite sync storage", error);
+      await this.db?.close();
+      await clearOPFS(force);
+      this.reset();
+    } catch (e) {
+      console.error("Error clearing sqlite sync storage", e);
     }
   };
 
   initialize = async (workspaceSlug: string) => {
+    if (!rootStore.user.localDBEnabled) return false; // return if the window gets hidden
+
     console.log(workspaceSlug, "from db");
-    if (document.hidden || !rootStore.user.localDBEnabled) return false;
     if (workspaceSlug !== this.workspaceSlug) this.reset();
 
     try {
       await this._initialize(workspaceSlug);
+      return true;
     } catch (error) {
       logError(error);
       this.status = "error";
@@ -81,65 +92,53 @@ export class Storage {
       return false;
     }
 
-    logInfo("Loading and initializing SQLite3 module...");
-
-    this.workspaceSlug = workspaceSlug;
-    this.dbName = workspaceSlug;
-
-    const { sqlite3Worker1Promiser } = await import("@sqlite.org/sqlite-wasm");
-
     try {
-      const promiser: any = await new Promise((resolve) => {
-        const _promiser = sqlite3Worker1Promiser({
-          onready: () => resolve(_promiser),
-        });
-      });
+      const { DBClass } = await import("./worker/db");
+      const worker = new Worker(new URL("./worker/db.ts", import.meta.url));
+      const MyWorker = Comlink.wrap<typeof DBClass>(worker);
 
-      const configResponse = await promiser("config-set", {});
-      log("Running SQLite3 version", configResponse.result.version.libVersion);
-
-      const openResponse = await promiser("open", {
-        filename: `file:${this.dbName}.sqlite3?vfs=opfs`,
-      });
-
-      const { dbId } = openResponse;
+      // Add cleanup on window unload
+      window.addEventListener("unload", () => worker.terminate());
+      this.workspaceSlug = workspaceSlug;
+      this.dbName = workspaceSlug;
+      const instance = await new MyWorker();
+      await instance.init(workspaceSlug);
       this.db = {
-        dbId,
-        exec: async (val: any) => {
-          if (typeof val === "string") {
-            val = { sql: val };
-          }
-
-          return promiser("exec", { dbId, ...val });
-        },
+        exec: instance.exec,
+        close: instance.close,
       };
 
-      // dump DB of db version is matching
-      const dbVersion = await this.getOption("DB_VERSION");
-      if (dbVersion !== "" && parseInt(dbVersion) !== DB_VERSION) {
-        await this.clearStorage();
-        this.reset();
-        await this._initialize(workspaceSlug);
-        return false;
-      }
-
-      log(
-        "OPFS is available, created persisted database at",
-        openResponse.result.filename.replace(/^file:(.*?)\?vfs=opfs$/, "$1")
-      );
       this.status = "ready";
-
       // Your SQLite code here.
       await createTables();
+
       await this.setOption("DB_VERSION", DB_VERSION.toString());
-    } catch (error) {}
+      return true;
+    } catch (error) {
+      this.status = "error";
+      this.db = null;
+      throw new Error(`Failed to initialize database worker: ${error}`);
+    }
   };
 
   syncWorkspace = async () => {
-    if (document.hidden || !rootStore.user.localDBEnabled) return; // return if the window gets hidden
-    // await Sentry.startSpan({ name: "LOAD_WS", attributes: { slug: this.workspaceSlug } }, async () => {
-    // await loadWorkSpaceData(this.workspaceSlug);
-    // });
+    if (!rootStore.user.localDBEnabled) return;
+    const syncInProgress = await this.getIsWriteInProgress("sync_workspace");
+    if (syncInProgress) {
+      log("Sync in progress, skipping");
+      return;
+    }
+
+    try {
+      // await startSpan({ name: "LOAD_WS", attributes: { slug: this.workspaceSlug } }, async () => {
+      this.setOption("sync_workspace", new Date().toUTCString());
+      await loadWorkSpaceData(this.workspaceSlug);
+      this.deleteOption("sync_workspace");
+      // });
+    } catch (e) {
+      logError(e);
+      this.deleteOption("sync_workspace");
+    }
   };
 
   syncProject = async (projectId: string) => {
@@ -162,7 +161,7 @@ export class Storage {
     // }
   };
 
-  getOption = async (key: string, fallback = "") => {
+  getOption = async (key: string, fallback?: string | boolean | number) => {
     try {
       const options = await runQuery(`select * from options where key='${key}'`);
       if (options.length) {
@@ -173,6 +172,25 @@ export class Storage {
     } catch (e) {
       return fallback;
     }
+  };
+
+  deleteOption = async (key: string) => {
+    await runQuery(` DELETE FROM options where key='${key}'`);
+  };
+
+  getIsWriteInProgress = async (op: string) => {
+    const writeStartTime = await this.getOption(op, false);
+    if (writeStartTime) {
+      // Check if it has been more than 5seconds
+      const current = new Date();
+      const start = new Date(writeStartTime);
+
+      if (current.getTime() - start.getTime() < 5000) {
+        return true;
+      }
+      return false;
+    }
+    return false;
   };
 
   setOption = async (key: string, value: string) => {
@@ -227,10 +245,7 @@ export class Storage {
     let issuesRaw: any[] = [];
     let count: any[];
     try {
-      [issuesRaw, count] = await startSpan(
-        { name: "GET_ISSUES" },
-        async () => await Promise.all([runQuery(query), runQuery(countQuery)])
-      );
+      [issuesRaw, count] = await Promise.all([runQuery(query), runQuery(countQuery)]);
     } catch (e) {
       logError(e);
       const issueService = new IssueService();

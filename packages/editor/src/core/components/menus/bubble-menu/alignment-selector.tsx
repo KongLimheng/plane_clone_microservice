@@ -2,7 +2,7 @@ import { Editor } from "@tiptap/core";
 import { TextAlignItem } from "../menu-item";
 import { TEditorCommands } from "@/types";
 import { AlignCenter, AlignLeft, AlignRight, LucideIcon } from "lucide-react";
-import { cn } from "@/helpers/common";
+import { cn } from "@plane/utils";
 
 type Props = {
   editor: Editor;

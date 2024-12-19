@@ -1,4 +1,4 @@
-import { cn } from "@plane/ui";
+import { cn } from "@plane/utils";
 
 type TProps = {
   children: React.ReactNode;

@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { cn } from "@plane/ui";
+import { cn } from "@/helpers/common.helper";
 
 type Props = {
   children: ReactNode;

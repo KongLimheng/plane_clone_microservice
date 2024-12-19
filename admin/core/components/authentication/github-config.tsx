@@ -2,7 +2,8 @@ import { observer } from "mobx-react";
 import Link from "next/link";
 import { Settings2 } from "lucide-react";
 import { TInstanceAuthenticationMethodKeys } from "@plane/types";
-import { cn, getButtonStyling, ToggleSwitch } from "@plane/ui";
+import { getButtonStyling, ToggleSwitch } from "@plane/ui";
+import { cn } from "@plane/utils";
 import { useInstance } from "@/hooks/store";
 
 type Props = {

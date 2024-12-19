@@ -9,8 +9,8 @@ export const logError = (e: any) => {
   if (e?.result?.errorClass === "SQLite3Error") {
     e = parseSQLite3Error(e);
   }
-  // Sentry.captureException(e);
-  console.log(e);
+  console.error(e);
+  // captureException(e);
 };
 
 const parseSQLite3Error = (error: any) => {
@@ -102,4 +102,50 @@ export const wrapDateTime = (field: string) => {
     return `datetime(${field})`;
   }
   return field;
+};
+
+export const isChrome = () => {
+  const userAgent = navigator.userAgent;
+  return userAgent.includes("Chrome") && !userAgent.includes("Edg") && !userAgent.includes("OPR");
+};
+
+export const clearOPFS = async (force = false) => {
+  const storageManager = window.navigator.storage;
+  const root = await storageManager.getDirectory();
+
+  if (force && isChrome()) {
+    await (root as any).remove({ recursive: true });
+    return;
+  }
+  // ts-ignore
+  for await (const entry of root.values()) {
+    if (entry.kind === "directory" && entry.name.startsWith(".ahp-")) {
+      // A lock with the same name as the directory protects it from
+      // being deleted.
+
+      if (force) {
+        // don't wait for the lock
+        try {
+          await root.removeEntry(entry.name, { recursive: true });
+        } catch (e) {
+          console.log(e);
+        }
+      } else {
+        await navigator.locks.request(entry.name, { ifAvailable: true }, async (lock) => {
+          if (lock) {
+            log?.(`Deleting temporary directory ${entry.name}`);
+            try {
+              await root.removeEntry(entry.name, { recursive: true });
+            } catch (e) {
+              console.log(e);
+            }
+          } else {
+            log?.(`Temporary directory ${entry.name} is in use`);
+          }
+        });
+      }
+    } else {
+      root.removeEntry(entry.name);
+    }
+  }
 };

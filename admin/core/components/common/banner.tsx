@@ -1,6 +1,6 @@
 import { FC } from "react";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { cn } from "@plane/ui";
+import { cn } from "@plane/utils";
 
 type TBanner = {
   type: "success" | "error";

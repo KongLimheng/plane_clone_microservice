@@ -7,7 +7,7 @@ import React, { useState } from "react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Tooltip } from "@plane/ui";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import { cn } from "@/helpers/common";
+import { cn } from "@plane/utils";
 
 // we just have ts support for now
 const lowlight = createLowlight(common);

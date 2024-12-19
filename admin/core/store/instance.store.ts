@@ -20,7 +20,7 @@ export interface IInstanceStore {
   instanceAdmins?: IInstanceAdmin[];
   instanceConfigurations?: IInstanceConfiguration[];
   // computed
-  formattedConfig?: IFormattedInstanceConfiguration;
+  formattedConfig?: IFormattedInstanceConfiguration | undefined;
   // action
   hydrate: (data: IInstanceInfo) => void;
   fetchInstanceInfo: () => Promise<IInstanceInfo>;

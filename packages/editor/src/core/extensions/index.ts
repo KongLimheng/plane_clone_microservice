@@ -4,3 +4,4 @@ export * from "./quote";
 export * from "./code";
 export * from "./code-inline";
 export * from "./slash-commands";
+export * from "./read-only-extensions";

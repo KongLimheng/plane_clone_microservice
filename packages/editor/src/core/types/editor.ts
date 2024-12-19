@@ -146,6 +146,7 @@ export interface ICollaborativeDocumentEditor
 // read only editor props
 export interface IReadOnlyEditorProps {
   containerClassName?: string;
+  disabledExtensions: TExtensions[];
   displayConfig?: TDisplayConfig;
   editorClassName?: string;
   fileHandler: Pick<TFileHandler, "getAssetSrc">;

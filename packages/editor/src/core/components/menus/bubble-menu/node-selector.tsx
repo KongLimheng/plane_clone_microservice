@@ -3,7 +3,7 @@ import { Dispatch, SetStateAction } from "react";
 import { CodeItem, EditorMenuItem, TextItem } from "../menu-item";
 import { Check, ChevronDown } from "lucide-react";
 import { TEditorCommands } from "@/types";
-import { cn } from "@/helpers/common";
+import { cn } from "@plane/utils";
 
 type Props = {
   editor: Editor;

@@ -1,6 +1,5 @@
+import { cn } from "@plane/utils";
 import { EditorState } from "@tiptap/pm/state";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
 
 interface EditorClassNames {
   noBorder?: boolean;
@@ -17,10 +16,6 @@ export const getEditorClassNames = ({ noBorder, borderOnFocus, containerClassNam
     },
     containerClassName
   );
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 export const getParagraphCount = (editorState: EditorState | undefined) => {
   if (!editorState) return 0;

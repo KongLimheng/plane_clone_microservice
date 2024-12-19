@@ -1,4 +1,4 @@
-import { cn } from "@/helpers/common";
+import { cn } from "@plane/utils";
 import { EditorProps } from "@tiptap/pm/view";
 // helpers
 

@@ -9,7 +9,7 @@ import { StoreProvider } from "@/lib/store-provider";
 // styles
 import "./globals.css";
 import { UserProvider } from "@/lib/user-provider";
-import { resolveGeneralTheme } from "../helpers";
+import { ASSET_PREFIX, resolveGeneralTheme } from "@/helpers/common.helper";
 
 const ToastWithTheme = () => {
   const { resolvedTheme } = useTheme();
@@ -22,13 +22,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* <head>
+      <head>
         <link rel="apple-touch-icon" sizes="180x180" href={`${ASSET_PREFIX}/favicon/apple-touch-icon.png`} />
         <link rel="icon" type="image/png" sizes="32x32" href={`${ASSET_PREFIX}/favicon/favicon-32x32.png`} />
         <link rel="icon" type="image/png" sizes="16x16" href={`${ASSET_PREFIX}/favicon/favicon-16x16.png`} />
         <link rel="manifest" href={`${ASSET_PREFIX}/site.webmanifest.json`} />
         <link rel="shortcut icon" href={`${ASSET_PREFIX}/favicon/favicon.ico`} />
-      </head> */}
+      </head>
       <body className={`antialiased`} suppressHydrationWarning>
         <ThemeProvider themes={["light", "dark"]} defaultTheme="system" enableSystem>
           <ToastWithTheme />

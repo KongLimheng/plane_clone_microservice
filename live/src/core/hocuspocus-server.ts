@@ -1,9 +1,10 @@
 import { Server } from '@hocuspocus/server'
 import { getExtensions } from '@/core/extensions/index.js'
 import { v4 as uuidv4 } from 'uuid'
-import { TUserDetails } from '@plane/editor'
+import { TDocumentEventsServer, TUserDetails } from '@plane/editor'
 import { handleAuthentication } from './lib/authentication.js'
 import { manualLogger } from './helpers/logger.js'
+import { DocumentCollaborativeEvents } from '@plane/editor/lib'
 
 export const getHocusPocusServer = async () => {
   const extensions = await getExtensions()
@@ -43,6 +44,14 @@ export const getHocusPocusServer = async () => {
         manualLogger.info('Authentication successful')
       } catch (error) {
         throw Error('Authentication unsuccessful!')
+      }
+    },
+    async onStateless({ payload, document }) {
+      // broadcast the client event (derived from the server event) to all the clients so that they can update their state
+      const response =
+        DocumentCollaborativeEvents[payload as TDocumentEventsServer].client
+      if (response) {
+        document.broadcastStateless(response)
       }
     },
     extensions,

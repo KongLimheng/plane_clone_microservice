@@ -11,7 +11,11 @@ const RichTextEditor = (props: IRichTextEditor) => {
     const extensions = [...externalExtensions];
 
     if (!disabledExtensions?.includes("slash-commands")) {
-      extensions.push(SlashCommands());
+      extensions.push(
+        SlashCommands({
+          disabledExtensions,
+        })
+      );
     }
 
     return extensions;

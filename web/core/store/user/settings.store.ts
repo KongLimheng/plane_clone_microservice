@@ -90,7 +90,6 @@ export class UserSettingsStore implements IUserSettingsStore {
       runInAction(() => {
         this.canUseLocalDB = !currentLocalDBValue;
       });
-
       const transactionResult = setValueIntoLocalStorage(LOCAL_DB_ENABLED, !currentLocalDBValue);
 
       if (!transactionResult) {

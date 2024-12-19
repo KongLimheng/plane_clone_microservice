@@ -5,7 +5,8 @@ import { isEmpty } from "lodash";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { IFormattedInstanceConfiguration, TInstanceGithubAuthenticationConfigurationKeys } from "@plane/types";
-import { Button, cn, getButtonStyling, setToast, Spinner, TOAST_TYPE } from "@plane/ui";
+import { Button, getButtonStyling, setToast, Spinner, TOAST_TYPE } from "@plane/ui";
+import { cn } from "@plane/utils";
 import {
   CodeBlock,
   ConfirmDiscardModal,

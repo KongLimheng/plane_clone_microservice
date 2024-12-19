@@ -22,6 +22,12 @@ class Command(BaseCommand):
                 "is_encrypted": False,
             },
             {
+                "key": "DISABLE_WORKSPACE_CREATION",
+                "value": env("DISABLE_WORKSPACE_CREATION", "0"),
+                "category": "WORKSPACE_MANAGEMENT",
+                "is_encrypted": False,
+            },
+            {
                 "key": "ENABLE_EMAIL_PASSWORD",
                 "value": env("ENABLE_EMAIL_PASSWORD", "1"),
                 "category": "AUTHENTICATION",
@@ -207,6 +213,48 @@ class Command(BaseCommand):
                         value = "0"
                     InstanceConfiguration.objects.create(
                         key="IS_GITHUB_ENABLED",
+                        value=value,
+                        category="AUTHENTICATION",
+                        is_encrypted=False,
+                    )
+                    self.stdout.write(
+                        self.style.SUCCESS(
+                            f"{key} loaded with value from environment variable."
+                        )
+                    )
+                if key == "IS_GITLAB_ENABLED":
+                    GITLAB_HOST, GITLAB_CLIENT_ID, GITLAB_CLIENT_SECRET = (
+                        get_configuration_value(
+                            [
+                                {
+                                    "key": "GITLAB_HOST",
+                                    "default": env(
+                                        "GITLAB_HOST", "https://gitlab.com"
+                                    ),
+                                },
+                                {
+                                    "key": "GITLAB_CLIENT_ID",
+                                    "default": env("GITLAB_CLIENT_ID", ""),
+                                },
+                                {
+                                    "key": "GITLAB_CLIENT_SECRET",
+                                    "default": env(
+                                        "GITLAB_CLIENT_SECRET", ""
+                                    ),
+                                },
+                            ]
+                        )
+                    )
+                    if (
+                        bool(GITLAB_HOST)
+                        and bool(GITLAB_CLIENT_ID)
+                        and bool(GITLAB_CLIENT_SECRET)
+                    ):
+                        value = "1"
+                    else:
+                        value = "0"
+                    InstanceConfiguration.objects.create(
+                        key="IS_GITLAB_ENABLED",
                         value=value,
                         category="AUTHENTICATION",
                         is_encrypted=False,

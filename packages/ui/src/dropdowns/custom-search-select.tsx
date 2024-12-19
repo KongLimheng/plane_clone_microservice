@@ -175,7 +175,7 @@ export const CustomSearchSelect = ({
                             >
                               {({ selected }) => (
                                 <>
-                                  <span>{option.content}</span>
+                                  <span className="flex-grow truncate">{option.content}</span>
                                   {selected && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
                                   {option.tooltip && (
                                     <>

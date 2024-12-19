@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Control, Controller } from "react-hook-form";
 import { Eye, EyeOff } from "lucide-react";
-import { cn, Input } from "@plane/ui";
+import { Input } from "@plane/ui";
+import { cn } from "@plane/utils";
 
 type Props = {
   control: Control<any>;

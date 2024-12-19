@@ -1,6 +1,6 @@
 import { DEFAULT_DISPLAY_CONFIG } from "@/constants/config";
-import { cn } from "@/helpers/common";
 import { TDisplayConfig } from "@/types";
+import { cn } from "@plane/utils";
 import { Editor } from "@tiptap/react";
 import { ReactNode } from "react";
 

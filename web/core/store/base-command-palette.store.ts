@@ -2,9 +2,8 @@ import { action, computed, makeObservable, observable } from "mobx";
 import { EIssuesStoreType, TCreateModalStoreTypes } from "@/constants/issue";
 import { DEFAULT_CREATE_PAGE_MODAL_DATA, EPageAccess, TCreatePageModal } from "@/constants/page";
 
-export interface ICommandPaletteStore {
+export interface IBaseCommandPaletteStore {
   // observables
-
   isCommandPaletteOpen: boolean;
   isShortcutModalOpen: boolean;
   isCreateProjectModalOpen: boolean;
@@ -15,8 +14,7 @@ export interface ICommandPaletteStore {
   isCreateIssueModalOpen: boolean;
   isDeleteIssueModalOpen: boolean;
   isBulkDeleteIssueModalOpen: boolean;
-  // computed
-  isAnyModalOpen: boolean;
+
   // toggle actions
   toggleCommandPaletteModal: (value?: boolean) => void;
   toggleShortcutModal: (value?: boolean) => void;
@@ -30,7 +28,7 @@ export interface ICommandPaletteStore {
   toggleBulkDeleteIssueModal: (value?: boolean) => void;
 }
 
-export class CommandPaletteStore implements ICommandPaletteStore {
+export abstract class BaseCommandPaletteStore implements IBaseCommandPaletteStore {
   // observables
   isCommandPaletteOpen: boolean = false;
   isShortcutModalOpen: boolean = false;
@@ -42,7 +40,6 @@ export class CommandPaletteStore implements ICommandPaletteStore {
   isDeleteIssueModalOpen: boolean = false;
   isBulkDeleteIssueModalOpen: boolean = false;
   createPageModal: TCreatePageModal = DEFAULT_CREATE_PAGE_MODAL_DATA;
-
   createIssueStoreType: TCreateModalStoreTypes = EIssuesStoreType.PROJECT;
 
   constructor() {
@@ -59,8 +56,6 @@ export class CommandPaletteStore implements ICommandPaletteStore {
       isBulkDeleteIssueModalOpen: observable.ref,
       createPageModal: observable,
 
-      // computed
-      isAnyModalOpen: computed,
       // toggle actions
       toggleCommandPaletteModal: action,
       toggleShortcutModal: action,
@@ -75,7 +70,11 @@ export class CommandPaletteStore implements ICommandPaletteStore {
     });
   }
 
-  get isAnyModalOpen() {
+  /**
+   * Returns whether any base modal is open
+   * @protected - allows access from child classes
+   */
+  protected getCoreModalsState(): boolean {
     return Boolean(
       this.isCreateIssueModalOpen ||
         this.isCreateCycleModalOpen ||

@@ -1,8 +1,17 @@
 from django.urls import path
-from plane.license.api.views import (InstanceAdminEndpoint, InstanceAdminSignInEndpoint, InstanceAdminSignUpEndpoint, InstanceAdminUserMeEndpoint,
-                                     InstanceAdminUserSessionEndpoint, InstanceEndpoint, SignUpScreenVisitedEndpoint, InstanceAdminSignOutEndpoint, InstanceConfigurationEndpoint)
-from django.views.decorators.csrf import csrf_exempt
-
+from plane.license.api.views import (
+    InstanceAdminEndpoint,
+    InstanceAdminSignInEndpoint,
+    InstanceAdminSignUpEndpoint,
+    InstanceAdminUserMeEndpoint,
+    InstanceAdminUserSessionEndpoint,
+    InstanceEndpoint,
+    SignUpScreenVisitedEndpoint,
+    InstanceAdminSignOutEndpoint,
+    InstanceConfigurationEndpoint,
+    InstanceWorkSpaceEndpoint,
+    InstanceWorkSpaceAvailabilityCheckEndpoint
+)
 
 urlpatterns = [
     path(
@@ -57,4 +66,12 @@ urlpatterns = [
         SignUpScreenVisitedEndpoint.as_view(),
         name="instance-sign-up",
     ),
+
+    path(
+        "workspace-slug-check/",
+        InstanceWorkSpaceAvailabilityCheckEndpoint.as_view(),
+        name="instance-workspace-availability",
+    ),
+    path("workspaces/", InstanceWorkSpaceEndpoint.as_view(),
+         name="instance-workspace"),
 ]

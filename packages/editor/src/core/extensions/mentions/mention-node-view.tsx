@@ -1,5 +1,5 @@
-import { cn } from "@/helpers/common";
 import { IMentionHighlight } from "@/types";
+import { cn } from "@plane/utils";
 import { NodeViewWrapper } from "@tiptap/react";
 import { useEffect, useState } from "react";
 

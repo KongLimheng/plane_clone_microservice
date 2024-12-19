@@ -8,6 +8,7 @@ import { InstanceHeader } from "@/components/auth-header";
 import LogoSpinner from "@/components/common/logo-spinner";
 import { NewUserPopup } from "@/components/new-user-popup";
 import { useUser } from "@/hooks/store";
+
 type TAdminLayout = {
   children: ReactNode;
 };

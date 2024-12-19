@@ -10,7 +10,7 @@ const LogoSpinner = () => {
 
   return (
     <div>
-      <Image src={logoSrc} alt="logo" className="w-[82px] h-[82px] mr-2" priority={false} />
+      <Image src={logoSrc} alt="logo" className="w-[82px] h-[82px] mr-2" priority />
     </div>
   );
 };

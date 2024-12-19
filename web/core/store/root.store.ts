@@ -1,5 +1,5 @@
 import { enableStaticRendering } from "mobx-react";
-import { CommandPaletteStore, ICommandPaletteStore } from "./command-palette.store";
+import { CommandPaletteStore, ICommandPaletteStore } from "@/plane-web/store/command-palette.store";
 import { DashboardStore, IDashboardStore } from "./dashboard.store";
 import { IInstanceStore, InstanceStore } from "./instance.store";
 import { IIssueRootStore, IssueRootStore } from "./issue/root.store";

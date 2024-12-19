@@ -2,10 +2,10 @@ import { BubbleMenu, BubbleMenuProps, isNodeSelection } from "@tiptap/react";
 import { useState } from "react";
 import { BoldItem, CodeItem, EditorMenuItem, ItalicItem, StrikeThroughItem, UnderLineItem } from "../menu-item";
 import { isCellSelection } from "@/extensions/table/utilties/is-cell-selection";
-import { cn } from "@/helpers/common";
 import { TEditorCommands } from "@/types";
 import { TextAlignmentSelector } from "./alignment-selector";
 import { BubbleMenuNodeSelector } from "./node-selector";
+import { cn } from "@plane/utils";
 
 type EditorBubbleMenuProps = Omit<BubbleMenuProps, "children">;
 

@@ -1,5 +1,5 @@
-import { cn } from "@/helpers/common";
 import { ISlashCommandItem } from "@/types";
+import { cn } from "@plane/utils";
 
 type Props = {
   isSelected: boolean;

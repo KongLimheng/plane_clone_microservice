@@ -10,8 +10,6 @@ export * from "./spinners";
 export * from "./toast";
 export * from "./tooltip";
 export * from "./loader";
-export * from "../helpers";
-export * from "./loader";
 export * from "./row";
 export * from "./header";
 export * from "./modals";

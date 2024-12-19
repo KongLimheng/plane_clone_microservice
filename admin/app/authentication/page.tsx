@@ -4,7 +4,8 @@ import { useState } from "react";
 import { observer } from "mobx-react";
 import useSWR from "swr";
 import { TInstanceConfigurationKeys } from "@plane/types";
-import { cn, Loader, setPromiseToast, ToggleSwitch } from "@plane/ui";
+import { Loader, setPromiseToast, ToggleSwitch } from "@plane/ui";
+import { cn } from "@plane/utils";
 import { useInstance } from "@/hooks/store";
 import { AuthenticationModes } from "@/plane-admin/components/authentication";
 

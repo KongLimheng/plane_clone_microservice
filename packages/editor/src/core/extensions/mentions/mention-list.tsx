@@ -1,6 +1,6 @@
-import { cn } from "@/helpers/common";
 import { IMentionSuggestion } from "@/types";
 import { Avatar } from "@plane/ui";
+import { cn } from "@plane/utils";
 import { Editor } from "@tiptap/react";
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";

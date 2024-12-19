@@ -16,6 +16,7 @@
     "@plane/helpers": "*",
     "@plane/types": "*",
     "@plane/ui": "*",
+    "@plane/utils": "*",
     "@react-aria/focus": "^3.18.4",
     "axios": "^1.7.7",
     "clsx": "^2.1.1",
@@ -28,7 +29,9 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0",
     "swr": "^2.2.5",
-    "zxcvbn": "^4.4.2"
+    "zxcvbn": "^4.4.2",
+    "lodash": "^4.17.21",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@plane/eslint-config": "*",
@@ -38,6 +41,7 @@
     "@types/react-dom": "^18.2.18",
     "@types/zxcvbn": "^4.4.5",
     "tailwind-config-custom": "*",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "@types/uuid": "^9.0.8"
   }
 }

@@ -1,5 +1,6 @@
 import { setText } from "@/helpers/editor-commands";
-import { CommandProps, ISlashCommandItem } from "@/types";
+import { coreEditorAdditionalSlashCommandOptions } from "@/plane-editor/extensions/slash-commands";
+import { CommandProps, ISlashCommandItem, TExtensions } from "@/types";
 import {
   CaseSensitive,
   Code2,
@@ -18,6 +19,7 @@ import {
   Table,
   TextQuote,
 } from "lucide-react";
+import { TSlashCommandAdditionalOption } from "./root";
 
 export type TSlashCommandSection = {
   key: string;
@@ -25,9 +27,16 @@ export type TSlashCommandSection = {
   items: ISlashCommandItem[];
 };
 
+type TArgs = {
+  additionalOptions?: TSlashCommandAdditionalOption[];
+  disabledExtensions: TExtensions[];
+};
+
 export const getSlashCommandFilteredSections =
-  (additionalOptions?: ISlashCommandItem[]) =>
+  (args: TArgs) =>
   ({ query }: { query: string }): TSlashCommandSection[] => {
+    const { additionalOptions, disabledExtensions } = args;
+
     const SLASH_COMMAND_SECTIONS: TSlashCommandSection[] = [
       {
         key: "general",
@@ -180,8 +189,19 @@ export const getSlashCommandFilteredSections =
       },
     ];
 
-    additionalOptions?.map((item) => {
-      SLASH_COMMAND_SECTIONS?.[0]?.items.push(item);
+    [
+      ...(additionalOptions ?? []),
+      ...coreEditorAdditionalSlashCommandOptions({
+        disabledExtensions,
+      }),
+    ]?.forEach((item) => {
+      const sectionToPushTo = SLASH_COMMAND_SECTIONS.find((s) => s.key === item.section) ?? SLASH_COMMAND_SECTIONS[0];
+      const itemIndexToPushAfter = sectionToPushTo.items.findIndex((i) => i.commandKey === item.pushAfter);
+      if (itemIndexToPushAfter !== -1) {
+        sectionToPushTo.items.splice(itemIndexToPushAfter + 1, 0, item);
+      } else {
+        sectionToPushTo.items.push(item);
+      }
     });
 
     const filteredSlashSections = SLASH_COMMAND_SECTIONS.map((section) => ({

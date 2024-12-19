@@ -6,7 +6,8 @@ import Link from "next/link";
 import packageJson from "package.json";
 import { ExternalLink, FileText, HelpCircle, MoveLeft } from "lucide-react";
 import { Transition } from "@headlessui/react";
-import { cn, DiscordIcon, GithubIcon, Tooltip } from "@plane/ui";
+import { DiscordIcon, GithubIcon, Tooltip } from "@plane/ui";
+import { cn } from "@plane/utils";
 import { WEB_BASE_URL } from "@/helpers/common.helper";
 import { useTheme } from "@/hooks/store";
 
